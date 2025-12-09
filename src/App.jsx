@@ -4,6 +4,7 @@ import { AdminLogin } from './pages/AdminLogin'
 import { AdminDashboard } from './pages/AdminDashboard'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './styles/global.css'
+import './styles/mobile-fix.css'
 import './styles/landing.css'
 import './styles/admin.css'
 

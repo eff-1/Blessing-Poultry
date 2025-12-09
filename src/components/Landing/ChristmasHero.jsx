@@ -52,7 +52,7 @@ export const ChristmasHero = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black" onMouseMove={handleMouseMove}>
+    <div className="christmas-hero-wrapper" onMouseMove={handleMouseMove}>
       {/* Background Image */}
       <div className="absolute inset-0">
         <img 

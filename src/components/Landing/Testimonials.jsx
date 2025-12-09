@@ -37,7 +37,7 @@ export const Testimonials = () => {
           <p className="section-subtitle">Real feedback from real customers</p>
         </motion.div>
 
-        <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+        <div className="testimonials-wrapper">
           <motion.div
             key={current}
             initial={{ opacity: 0, x: 100 }}
@@ -54,50 +54,20 @@ export const Testimonials = () => {
                 <FaStar key={i} />
               ))}
             </div>
-            <p style={{ fontSize: '18px', fontStyle: 'italic', color: '#666' }}>
+            <p className="testimonial-text">
               "{testimonial.comment}"
             </p>
           </motion.div>
 
           {testimonials.length > 1 && (
-            <>
-              <button
-                onClick={prev}
-                style={{
-                  position: 'absolute',
-                  left: '-60px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'var(--primary-green)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '48px',
-                  height: '48px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="testimonial-nav">
+              <button onClick={prev} className="testimonial-nav-btn testimonial-prev">
                 <FaChevronLeft />
               </button>
-              <button
-                onClick={next}
-                style={{
-                  position: 'absolute',
-                  right: '-60px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'var(--primary-green)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '48px',
-                  height: '48px',
-                  cursor: 'pointer',
-                }}
-              >
+              <button onClick={next} className="testimonial-nav-btn testimonial-next">
                 <FaChevronRight />
               </button>
-            </>
+            </div>
           )}
         </div>
       </Container>
