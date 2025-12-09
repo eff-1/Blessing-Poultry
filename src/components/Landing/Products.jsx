@@ -1,19 +1,27 @@
 import { useState, useEffect } from 'react'
-import { Container, Row, Col } from 'react-bootstrap'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabaseClient'
 import { ProductCard } from './ProductCard'
 import { LoadingSpinner } from '../Shared/LoadingSpinner'
+import { FiSearch } from 'react-icons/fi'
 
 export const Products = () => {
   const [products, setProducts] = useState([])
   const [filter, setFilter] = useState('All Products')
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
   const categories = ['All Products', 'Eggs', 'Broilers', 'Layers', 'Day-Old Chicks', 'Feeds']
 
   useEffect(() => {
     fetchProducts()
+    
+    // Listen for search events from navbar
+    const handleSearch = (e) => {
+      setSearchQuery(e.detail)
+    }
+    window.addEventListener('searchProducts', handleSearch)
+    return () => window.removeEventListener('searchProducts', handleSearch)
   }, [])
 
   const fetchProducts = async () => {
@@ -23,64 +31,90 @@ export const Products = () => {
     setLoading(false)
   }
 
-  const filteredProducts = filter === 'All Products'
-    ? products
-    : products.filter(p => p.category === filter)
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = filter === 'All Products' || p.category === filter
+    const matchesSearch = !searchQuery || 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
 
   return (
-    <section id="products" className="section-padding" style={{ backgroundColor: 'white' }}>
-      <Container>
+    <section id="products" className="products-section-new">
+      <div className="container-custom">
+        {/* Section Header */}
         <motion.div
+          className="products-header"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          style={{ textAlign: 'center', marginBottom: '48px' }}
         >
-          <h2 className="section-title">Our Products</h2>
-          <p className="section-subtitle">Fresh and quality poultry products</p>
+          <span className="products-badge">Our Products</span>
+          <h2 className="products-title">Fresh & Quality Poultry Products</h2>
+          <p className="products-subtitle">
+            Premium quality products delivered straight from our farm to your table
+          </p>
         </motion.div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '48px' }}>
+        {/* Search Bar */}
+        <motion.div
+          className="products-search"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <FiSearch size={20} />
+          <input
+            type="text"
+            placeholder="Search for eggs, chicken, feeds..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </motion.div>
+
+        {/* Category Filters */}
+        <div className="products-filters">
           {categories.map((cat) => (
             <motion.button
               key={cat}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(cat)}
-              style={{
-                padding: '10px 24px',
-                borderRadius: '24px',
-                border: 'none',
-                backgroundColor: filter === cat ? 'var(--primary-green)' : '#f0f0f0',
-                color: filter === cat ? 'white' : 'var(--text-dark)',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className={`filter-btn ${filter === cat ? 'active' : ''}`}
             >
               {cat}
             </motion.button>
           ))}
         </div>
 
+        {/* Products Grid */}
         {loading ? (
           <LoadingSpinner />
-        ) : (
-          <Row>
+        ) : filteredProducts.length > 0 ? (
+          <div className="products-grid">
             {filteredProducts.map((product, index) => (
-              <Col key={product.id} lg={4} md={6} className="mb-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <ProductCard product={product} />
-                </motion.div>
-              </Col>
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                viewport={{ once: true }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
             ))}
-          </Row>
+          </div>
+        ) : (
+          <motion.div
+            className="no-products"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <p>No products found matching your search.</p>
+          </motion.div>
         )}
-      </Container>
+      </div>
     </section>
   )
 }

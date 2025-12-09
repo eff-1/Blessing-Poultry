@@ -1,0 +1,84 @@
+═══════════════════════════════════════════════════════════════
+  BLESSING POULTRIES - IMAGE FOLDER QUICK REFERENCE
+═══════════════════════════════════════════════════════════════
+
+📁 FOLDER STRUCTURE CREATED:
+
+public/images/
+├── hero/                    (Hero/banner backgrounds)
+├── products/
+│   ├── eggs/               (Egg product images)
+│   ├── broilers/           (Chicken/broiler images)
+│   ├── layers/             (Layer hen images)
+│   ├── chicks/             (Day-old chicks images)
+│   └── feeds/              (Feed product images)
+├── about/                   (Farm/facility images)
+├── gallery/                 (Gallery images)
+├── logo/                    (Logo and branding)
+└── decorative/             (Optional patterns/shapes)
+
+═══════════════════════════════════════════════════════════════
+
+🎯 MINIMUM IMAGES NEEDED TO START (35 images):
+
+✓ 4 hero images (christmas-banner.jpg, hero-1.jpg, hero-2.jpg, hero-3.jpg)
+✓ 1 logo (logo.png)
+✓ 5 egg images
+✓ 5 broiler images
+✓ 5 layer images
+✓ 3 feed images
+✓ 3 about images
+✓ 10 gallery images
+
+═══════════════════════════════════════════════════════════════
+
+📝 NAMING CONVENTION:
+
+Hero:        christmas-banner.jpg, hero-1.jpg, hero-2.jpg...
+Eggs:        egg-1.jpg, egg-2.jpg, egg-3.jpg...
+Broilers:    broiler-1.jpg, broiler-2.jpg, broiler-3.jpg...
+Layers:      layer-1.jpg, layer-2.jpg, layer-3.jpg...
+Chicks:      chick-1.jpg, chick-2.jpg, chick-3.jpg...
+Feeds:       feed-1.jpg, feed-2.jpg, feed-3.jpg...
+About:       farm-1.jpg, farm-2.jpg, farm-3.jpg...
+Gallery:     gallery-1.jpg, gallery-2.jpg, gallery-3.jpg...
+Logo:        logo.png, favicon.ico
+
+═══════════════════════════════════════════════════════════════
+
+📏 IMAGE SIZES:
+
+Hero/Banners:    1920x1080px (landscape)
+Products:        800x800px (square)
+About:           1200x800px (landscape)
+Gallery:         1200x900px (landscape/square)
+Logo:            500x500px (transparent PNG)
+Favicon:         32x32px (ICO format)
+
+═══════════════════════════════════════════════════════════════
+
+💾 FILE SIZE LIMITS:
+
+Hero images:     Under 500KB
+Product images:  Under 300KB
+Other images:    Under 400KB
+Logo:            Under 100KB
+
+Use compression tools: TinyPNG.com or Squoosh.app
+
+═══════════════════════════════════════════════════════════════
+
+✅ NEXT STEPS:
+
+1. Download/gather your images
+2. Rename them according to the naming convention above
+3. Compress them to meet file size limits
+4. Place them in the correct folders
+5. Check IMAGE-CHECKLIST.md to track progress
+6. Let me know when ready - I'll update the code!
+
+═══════════════════════════════════════════════════════════════
+
+📖 For detailed instructions, check the README.md file in each folder!
+
+═══════════════════════════════════════════════════════════════
