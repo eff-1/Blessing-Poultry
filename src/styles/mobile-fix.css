@@ -2,13 +2,27 @@
    MOBILE FIX - PREVENT HORIZONTAL SCROLL
    ======================================== */
 
+/* 
+  MOBILE LAYOUT FIXES:
+  - Ensures equal padding on left and right sides
+  - Prevents content overflow on mobile devices
+  - Maintains proper centering of all sections
+  - Reduces component sizes for better mobile fit
+  - Uses box-sizing: border-box for proper width calculations
+*/
+
 /* Prevent all horizontal overflow */
+* {
+  box-sizing: border-box !important;
+}
+
 html,
 body {
   overflow-x: hidden !important;
   width: 100% !important;
   max-width: 100vw !important;
   position: relative;
+  box-sizing: border-box !important;
 }
 
 #root {
@@ -30,10 +44,11 @@ section {
 .container-custom {
   max-width: 100% !important;
   overflow-x: hidden !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
   margin-left: auto !important;
   margin-right: auto !important;
+  box-sizing: border-box !important;
 }
 
 /* Fix rows and columns */
@@ -83,16 +98,16 @@ img {
 
 /* Mobile specific fixes */
 @media (max-width: 767px) {
-  /* Reduce padding on mobile */
+  /* Reduce padding on mobile but keep balanced */
   .container-custom {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
   
   /* Fix hero content */
   .relative.min-h-screen .container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
   
   /* Fix countdown timer */
@@ -120,14 +135,17 @@ img {
   /* Fix search bar */
   .search-form-new,
   .search-container-new {
-    max-width: calc(100vw - 40px) !important;
+    max-width: calc(100vw - 32px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
   
   /* Fix navbar */
   .navbar-content {
     max-width: 100% !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
   }
   
   /* Fix testimonials carousel */
@@ -143,10 +161,17 @@ img {
     max-width: 100% !important;
   }
   
+  /* Fix products grid - reduce size, maintain padding */
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    max-width: 100% !important;
+  }
+  
   /* Fix gallery */
   .gallery-grid-new {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+    gap: 12px !important;
     padding: 0 !important;
   }
   
@@ -156,19 +181,37 @@ img {
     gap: 24px !important;
   }
   
-  /* Fix stats */
+  /* Fix about features - reduce to single column on mobile */
+  .about-features {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Fix stats - reduce size and maintain padding */
   .about-stats {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px !important;
-    padding: 20px 12px !important;
+    padding: 24px 16px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Reduce stat card padding */
+  .stat-card {
+    padding: 16px 12px !important;
+  }
+  
+  /* Reduce feature card padding */
+  .feature-card {
+    padding: 16px !important;
   }
 }
 
 /* Extra small mobile */
 @media (max-width: 375px) {
   .container-custom {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
   
   /* Smaller gaps */
@@ -185,6 +228,29 @@ img {
   h2 {
     font-size: 24px !important;
     line-height: 1.3 !important;
+  }
+  
+  /* Reduce stats and features even more */
+  .about-stats {
+    padding: 20px 12px !important;
+    gap: 10px !important;
+  }
+  
+  .stat-card {
+    padding: 12px 8px !important;
+  }
+  
+  .feature-card {
+    padding: 12px !important;
+  }
+  
+  /* Reduce products grid gap */
+  .products-grid {
+    gap: 10px !important;
+  }
+  
+  .gallery-grid-new {
+    gap: 10px !important;
   }
 }
 
@@ -234,8 +300,8 @@ img {
 
 @media (max-width: 767px) {
   .christmas-hero-wrapper .container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
   
   .christmas-hero-wrapper h1 {
@@ -255,6 +321,91 @@ img {
   .christmas-hero-wrapper button {
     font-size: 14px !important;
     padding: 12px 20px !important;
+  }
+}
+
+/* Products Section Mobile Fixes */
+@media (max-width: 767px) {
+  .products-section-new {
+    padding: 60px 0 !important;
+  }
+  
+  .products-section-new .container-custom {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  /* Reduce product card content padding */
+  .product-info {
+    padding: 12px !important;
+  }
+  
+  .product-name {
+    font-size: 14px !important;
+  }
+  
+  .product-description {
+    font-size: 12px !important;
+  }
+  
+  .price-value {
+    font-size: 18px !important;
+  }
+  
+  .order-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+/* About Section Mobile Fixes */
+@media (max-width: 767px) {
+  .about-section-new {
+    padding: 60px 0 !important;
+  }
+  
+  .about-section-new .container-custom {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  .about-title {
+    font-size: 24px !important;
+    padding: 0 8px !important;
+  }
+  
+  .about-text,
+  .about-text-secondary {
+    font-size: 14px !important;
+  }
+  
+  .feature-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .feature-content h4 {
+    font-size: 14px !important;
+  }
+  
+  .feature-content p {
+    font-size: 12px !important;
+  }
+}
+
+/* Gallery Section Mobile Fixes */
+@media (max-width: 767px) {
+  .gallery-section-new {
+    padding: 60px 0 !important;
+  }
+  
+  .gallery-section-new .container-custom {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  .gallery-title {
+    font-size: 24px !important;
   }
 }
 
@@ -309,6 +460,8 @@ img {
 @media (max-width: 767px) {
   .testimonials-wrapper {
     padding: 0 50px;
+    max-width: calc(100vw - 32px) !important;
+    margin: 0 auto !important;
   }
   
   .testimonial-nav-btn {
@@ -322,6 +475,13 @@ img {
   
   .testimonial-card {
     padding: 24px 16px !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Testimonials section container */
+  #testimonials .container-custom {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 }
 
