@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabaseClient'
 
 export const NavigationBar = () => {
   const [scrolled, setScrolled] = useState(false)
+  const [hidden, setHidden] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -13,11 +15,28 @@ export const NavigationBar = () => {
   const [allProducts, setAllProducts] = useState([])
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      
+      // Set scrolled state
+      setScrolled(currentScrollY > 50)
+      
+      // Hide/show navbar based on scroll direction
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past 100px
+        setHidden(true)
+      } else {
+        // Scrolling up
+        setHidden(false)
+      }
+      
+      setLastScrollY(currentScrollY)
+    }
+    
+    window.addEventListener('scroll', handleScroll, { passive: true })
     fetchProducts()
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [lastScrollY])
 
   const fetchProducts = async () => {
     const { data } = await supabase.from('products').select('*')
@@ -75,13 +94,14 @@ export const NavigationBar = () => {
       {/* Organic Navbar */}
       <motion.nav
         initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className={`navbar-organic ${scrolled ? 'scrolled' : ''}`}
+        animate={{ y: hidden ? -120 : 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className={`navbar-organic ${scrolled ? 'scrolled' : ''} ${hidden ? 'hidden' : ''}`}
       >
         <div className="navbar-blob">
-          <svg className="blob-shape" viewBox="0 0 1440 120" preserveAspectRatio="none">
+          <svg className="blob-shape" viewBox="0 0 1440 180" preserveAspectRatio="none">
             <path
-              d="M0,60 Q360,20 720,60 T1440,60 L1440,0 L0,0 Z"
+              d="M0,90 Q360,30 720,90 T1440,90 L1440,0 L0,0 Z"
               fill={scrolled ? '#ffffff' : 'rgba(255, 255, 255, 0.98)'}
             />
           </svg>

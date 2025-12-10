@@ -8,6 +8,10 @@
   transition: all 0.3s ease;
 }
 
+.navbar-organic.hidden {
+  pointer-events: none;
+}
+
 .navbar-blob {
   position: absolute;
   top: 0;
@@ -37,7 +41,7 @@
   z-index: 10;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1701,15 +1705,15 @@ avbar Responsive Media Queries */
   .navbar-links {
     display: flex;
   }
-  
+
   .mobile-menu-btn {
     display: none;
   }
-  
+
   .logo-text {
     font-size: 19px;
   }
-  
+
   .logo-circle {
     width: 46px;
     height: 46px;
@@ -1719,9 +1723,9 @@ avbar Responsive Media Queries */
 /* Tablet */
 @media (max-width: 991px) and (min-width: 768px) {
   .navbar-content {
-    padding: 20px 20px;
+    padding: 14px 20px;
   }
-  
+
   .logo-text {
     font-size: 16px;
   }
@@ -1730,57 +1734,67 @@ avbar Responsive Media Queries */
 /* Mobile - Standard */
 @media (max-width: 767px) {
   .navbar-blob {
-    height: 100px;
+    height: 140px;
   }
-  
+
   .navbar-organic.scrolled .navbar-blob {
-    height: 80px;
+    height: 120px;
   }
-  
+
   .navbar-content {
-    padding: 18px 16px;
+    padding: 1px 16px 20px 16px;
+    align-items: flex-start;
   }
-  
+
+  .navbar-logo {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
   .logo-circle {
-    width: 36px;
-    height: 36px;
+    width: 46px;
+    height: 46px;
   }
-  
+
   .logo-text {
-    font-size: 15px;
+    font-size: 17px;
   }
-  
+
+  .navbar-actions {
+    margin-top: 12px;
+  }
+
   .search-btn,
   .mobile-menu-btn {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
   }
-  
+
   .search-form-new {
     padding: 12px 16px;
   }
-  
+
   .search-form-new input {
     font-size: 14px;
   }
-  
+
   .search-overlay-new {
-    padding-top: 100px;
+    padding-top: 140px;
   }
-  
+
   .search-blob-bg {
-    height: 160px;
+    height: 180px;
   }
-  
+
   .suggestion-item {
     padding: 10px 12px;
   }
-  
+
   .suggestion-item img {
     width: 45px;
     height: 45px;
   }
-  
+
   .suggestion-name {
     font-size: 13px;
   }
@@ -1788,56 +1802,89 @@ avbar Responsive Media Queries */
 
 /* Mobile - Small (iPhone SE, etc) */
 @media (max-width: 375px) {
+  .navbar-blob {
+    height: 130px;
+  }
+
+  .navbar-organic.scrolled .navbar-blob {
+    height: 110px;
+  }
+
   .navbar-content {
-    padding: 16px 12px;
+    padding: 1px 12px 18px 12px;
+    align-items: flex-start;
   }
-  
+
+  .navbar-logo {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
   .logo-circle {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
-  
+
   .logo-text {
-    font-size: 14px;
+    font-size: 16px;
   }
-  
-  .search-btn,
-  .mobile-menu-btn {
-    width: 34px;
-    height: 34px;
-  }
-  
+
   .navbar-actions {
     gap: 8px;
+    margin-top: 10px;
+  }
+
+  .search-btn,
+  .mobile-menu-btn {
+    width: 46px;
+    height: 46px;
+  }
+
+  .search-overlay-new {
+    padding-top: 130px;
   }
 }
 
 /* Mobile - Extra Small (iPhone 4, old devices) */
 @media (max-width: 320px) {
   .navbar-blob {
-    height: 90px;
+    height: 120px;
   }
-  
+
+  .navbar-organic.scrolled .navbar-blob {
+    height: 100px;
+  }
+
   .navbar-content {
-    padding: 14px 10px;
+    padding: 8px 10px 16px 10px;
+    align-items: flex-start;
   }
-  
+
+  .navbar-logo {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
   .logo-circle {
-    width: 32px;
-    height: 32px;
+    width: 42px;
+    height: 42px;
   }
-  
+
   .logo-text {
-    font-size: 13px;
+    font-size: 15px;
   }
-  
+
   .search-btn,
   .mobile-menu-btn {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
-  
+
   .mobile-menu {
     width: 240px;
+  }
+
+  .search-overlay-new {
+    padding-top: 120px;
   }
 }
