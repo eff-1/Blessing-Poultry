@@ -16,24 +16,43 @@
   box-sizing: border-box !important;
 }
 
-/* Mobile smooth scrolling only */
+/* Super smooth mobile scrolling - fixed for navbar */
 @media (max-width: 768px) {
   body {
     -webkit-overflow-scrolling: touch !important;
     overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+  }
+
+  /* Optimize animations for smooth scrolling - excluding navbar */
+  .product-card-new,
+  .gallery-item-new,
+  .testimonial-card {
+    will-change: transform !important;
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
+  }
+
+  /* Ensure navbar works properly on mobile */
+  .navbar-organic {
+    will-change: transform !important;
   }
 }
 
-html,
+html {
+  scroll-behavior: smooth !important;
+}
+
 body {
   overflow-x: hidden !important;
   width: 100% !important;
   max-width: 100vw !important;
   position: relative;
   box-sizing: border-box !important;
-  /* Smooth scrolling for mobile */
-  scroll-behavior: smooth !important;
+  /* Super smooth scrolling optimizations */
   -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  scroll-behavior: smooth !important;
 }
 
 #root {
@@ -465,27 +484,58 @@ img {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  
+
   .products-grid {
-    grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
+    /* grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
     gap: 8px !important;
-    padding: 0 12px 0 6px !important;
+    padding: 0 40px 0 4px !important;
     max-width: 100% !important;
-    margin: 0 auto !important;
+    margin: 0 auto !important; */
   }
-  
+
   .product-card-new {
-    max-width: 140px !important;
+    max-width: 135px !important;
     width: 100% !important;
   }
-  
-  /* Smaller add to cart button for 320px */
-  .order-btn {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 12px !important;
+
+  /* Smaller add to cart button with bigger icon for 320px - Higher specificity */
+  .product-card-new .order-btn {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: none !important;
   }
-  
+
+  .product-card-new .order-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+  }
+
+  /* Smaller price text for better button alignment on 320px - Higher specificity */
+  .product-card-new .price-value {
+    font-size: 13px !important;
+  }
+
+  /* Smaller overlay "Buy Now" button with side spacing on 320px */
+  .product-overlay .quick-order-btn {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    margin: 0 12px !important;
+    width: auto !important;
+    max-width: calc(100% - 24px) !important;
+    white-space: nowrap !important;
+  }
+
+  .product-overlay .quick-order-btn span {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
   /* GALLERY - 2 per row with proper spacing */
   .gallery-grid-new {
     grid-template-columns: repeat(2, 1fr) !important;

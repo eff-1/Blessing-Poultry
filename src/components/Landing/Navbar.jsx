@@ -21,21 +21,30 @@ export const NavigationBar = () => {
       // Set scrolled state
       setScrolled(currentScrollY > 50)
       
-      // Hide/show navbar based on scroll direction
+      // Simple and reliable scroll detection for mobile
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         // Scrolling down & past 100px
         setHidden(true)
-      } else {
-        // Scrolling up
+        console.log('Hiding navbar - scrolling down')
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - always show
         setHidden(false)
+        console.log('Showing navbar - scrolling up')
       }
       
       setLastScrollY(currentScrollY)
     }
     
+    // Use both scroll and touchmove for better mobile detection
     window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('touchmove', handleScroll, { passive: true })
+    
     fetchProducts()
-    return () => window.removeEventListener('scroll', handleScroll)
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('touchmove', handleScroll)
+    }
   }, [lastScrollY])
 
   const fetchProducts = async () => {
