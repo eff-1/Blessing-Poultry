@@ -16,15 +16,8 @@
   box-sizing: border-box !important;
 }
 
-/* Mobile scroll optimization */
+/* Mobile smooth scrolling only */
 @media (max-width: 768px) {
-  * {
-    -webkit-transform: translateZ(0) !important;
-    transform: translateZ(0) !important;
-    -webkit-backface-visibility: hidden !important;
-    backface-visibility: hidden !important;
-  }
-  
   body {
     -webkit-overflow-scrolling: touch !important;
     overflow-scrolling: touch !important;
