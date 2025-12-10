@@ -392,6 +392,15 @@
   .search-form input {
     font-size: 16px;
   }
+
+  /* Mobile asymmetrical blob - taller on left side */
+  .navbar-blob {
+    height: 130px;
+  }
+
+  .navbar-organic.scrolled .navbar-blob {
+    height: 110px;
+  }
 }
 
 /* Hero */
@@ -1734,21 +1743,25 @@ avbar Responsive Media Queries */
 /* Mobile - Standard */
 @media (max-width: 767px) {
   .navbar-blob {
-    height: 140px;
+    height: 110px;
   }
 
   .navbar-organic.scrolled .navbar-blob {
-    height: 120px;
+    height: 95px;
   }
 
   .navbar-content {
-    padding: 1px 16px 20px 16px;
+    padding: 0px 16px 20px 16px;
     align-items: flex-start;
+    position: relative;
   }
 
   .navbar-logo {
     margin-top: 0;
     padding-top: 0;
+    position: absolute;
+    top: 2px;
+    left: 16px;
   }
 
   .logo-circle {
@@ -1762,6 +1775,9 @@ avbar Responsive Media Queries */
 
   .navbar-actions {
     margin-top: 12px;
+    position: absolute;
+    top: 0;
+    right: 16px;
   }
 
   .search-btn,
@@ -1779,7 +1795,7 @@ avbar Responsive Media Queries */
   }
 
   .search-overlay-new {
-    padding-top: 140px;
+    padding-top: 110px;
   }
 
   .search-blob-bg {
@@ -1803,21 +1819,25 @@ avbar Responsive Media Queries */
 /* Mobile - Small (iPhone SE, etc) */
 @media (max-width: 375px) {
   .navbar-blob {
-    height: 130px;
+    height: 100px;
   }
 
   .navbar-organic.scrolled .navbar-blob {
-    height: 110px;
+    height: 85px;
   }
 
   .navbar-content {
-    padding: 1px 12px 18px 12px;
+    padding: 0px 12px 18px 12px;
     align-items: flex-start;
+    position: relative;
   }
 
   .navbar-logo {
     margin-top: 0;
     padding-top: 0;
+    position: absolute;
+    top: 2px;
+    left: 12px;
   }
 
   .logo-circle {
@@ -1848,21 +1868,25 @@ avbar Responsive Media Queries */
 /* Mobile - Extra Small (iPhone 4, old devices) */
 @media (max-width: 320px) {
   .navbar-blob {
-    height: 120px;
+    height: 95px;
   }
 
   .navbar-organic.scrolled .navbar-blob {
-    height: 100px;
+    height: 80px;
   }
 
   .navbar-content {
-    padding: 8px 10px 16px 10px;
+    padding: 0px 10px 16px 10px;
     align-items: flex-start;
+    position: relative;
   }
 
   .navbar-logo {
     margin-top: 0;
     padding-top: 0;
+    position: absolute;
+    top: 2px;
+    left: 10px;
   }
 
   .logo-circle {

@@ -49,7 +49,7 @@ export const ProductCard = ({ product }) => {
               whileTap={{ scale: 0.95 }}
             >
               <FaWhatsapp size={20} />
-              <span>Order on WhatsApp</span>
+              <span>Get Yours Now</span>
             </motion.button>
           </div>
         )}

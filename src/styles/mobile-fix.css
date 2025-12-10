@@ -11,9 +11,24 @@
   - Uses box-sizing: border-box for proper width calculations
 */
 
-/* Prevent all horizontal overflow */
+/* Prevent all horizontal overflow and optimize scrolling */
 * {
   box-sizing: border-box !important;
+}
+
+/* Mobile scroll optimization */
+@media (max-width: 768px) {
+  * {
+    -webkit-transform: translateZ(0) !important;
+    transform: translateZ(0) !important;
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
+  }
+  
+  body {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-scrolling: touch !important;
+  }
 }
 
 html,
@@ -23,6 +38,9 @@ body {
   max-width: 100vw !important;
   position: relative;
   box-sizing: border-box !important;
+  /* Smooth scrolling for mobile */
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 #root {
@@ -70,7 +88,7 @@ section {
   overflow-x: hidden !important;
 }
 
-.relative.min-h-screen > * {
+.relative.min-h-screen>* {
   max-width: 100vw !important;
 }
 
@@ -98,25 +116,26 @@ img {
 
 /* Mobile specific fixes */
 @media (max-width: 767px) {
+
   /* Reduce padding on mobile but keep balanced */
   .container-custom {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   /* Fix hero content */
   .relative.min-h-screen .container {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   /* Fix countdown timer */
   .flex.gap-2,
   .flex.gap-3,
   .flex.gap-4 {
     gap: 8px !important;
   }
-  
+
   /* Fix buttons */
   button,
   .btn,
@@ -124,14 +143,14 @@ img {
     max-width: 100% !important;
     white-space: normal !important;
   }
-  
+
   /* Fix grid layouts */
   .grid,
   [class*="grid-"] {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
     gap: 12px !important;
   }
-  
+
   /* Fix search bar */
   .search-form-new,
   .search-container-new {
@@ -139,90 +158,98 @@ img {
     margin-left: auto !important;
     margin-right: auto !important;
   }
-  
-  /* Fix navbar - logo at top, buttons below, taller for comfort */
+
+  /* Fix navbar - logo at very top, buttons below, taller for comfort */
   .navbar-content {
     max-width: 100% !important;
-    padding: 12px 16px 20px 16px !important;
+    padding: 0px 16px 20px 16px !important;
     box-sizing: border-box !important;
     align-items: flex-start !important;
+    position: relative !important;
   }
-  
-  /* Logo positioned at very top */
+
+  /* Logo positioned at top with 2px space */
   .navbar-logo {
     margin-top: 0 !important;
     padding-top: 0 !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: 16px !important;
   }
-  
-  /* Buttons positioned lower */
+
+  /* Buttons positioned lower and to the right */
   .navbar-actions {
     margin-top: 12px !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 16px !important;
   }
-  
-  /* Ensure navbar blob is properly sized - big enough for all content */
+
+  /* Ensure navbar blob is properly sized - taller on left for logo */
   .navbar-blob {
-    height: 140px !important;
+    height: 130px !important;
   }
-  
+
   .navbar-organic.scrolled .navbar-blob {
-    height: 120px !important;
+    height: 110px !important;
   }
-  
+
+  /* Mobile-specific asymmetrical blob shape */
+  .navbar-blob svg {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   /* Larger buttons on mobile for better touch */
   .search-btn,
   .mobile-menu-btn {
     width: 48px !important;
     height: 48px !important;
   }
-  
+
   .logo-circle {
     width: 46px !important;
     height: 46px !important;
   }
-  
+
   .logo-text {
     font-size: 17px !important;
   }
-  
+
   /* Fix testimonials carousel */
   .carousel,
   .carousel-inner {
     max-width: 100% !important;
     overflow: hidden !important;
   }
-  
+
   /* Fix product cards */
   .product-card-new,
   .product-card {
     max-width: 100% !important;
   }
-  
-  /* Fix products grid - reduce size, maintain padding */
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-    max-width: 100% !important;
-  }
-  
+
+
+
   /* Fix gallery */
   .gallery-grid-new {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px !important;
     padding: 0 !important;
   }
-  
+
   /* Fix about section */
   .about-grid {
     grid-template-columns: 1fr !important;
     gap: 24px !important;
   }
-  
+
   /* Fix about features - reduce to single column on mobile */
   .about-features {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
-  
+
   /* Fix stats - reduce size and maintain padding */
   .about-stats {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -231,12 +258,12 @@ img {
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-  
+
   /* Reduce stat card padding */
   .stat-card {
     padding: 16px 12px !important;
   }
-  
+
   /* Reduce feature card padding */
   .feature-card {
     padding: 16px !important;
@@ -249,70 +276,284 @@ img {
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
-  
+
   /* Smaller gaps */
   .flex.gap-2 {
     gap: 6px !important;
   }
-  
+
   /* Smaller text */
   h1 {
     font-size: 28px !important;
     line-height: 1.2 !important;
   }
-  
+
   h2 {
     font-size: 24px !important;
     line-height: 1.3 !important;
   }
-  
+
   /* Reduce stats and features even more */
   .about-stats {
     padding: 20px 12px !important;
     gap: 10px !important;
   }
-  
+
   .stat-card {
     padding: 12px 8px !important;
   }
-  
+
   .feature-card {
     padding: 12px !important;
   }
-  
-  /* Reduce products grid gap */
-  .products-grid {
-    gap: 10px !important;
-  }
-  
+
+
+
   .gallery-grid-new {
     gap: 10px !important;
   }
 }
 
-/* iPhone 4 and very small devices */
+/* iPhone 5 and very small devices (320px) */
 @media (max-width: 320px) {
   .container-custom {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
-  
-  /* Even smaller text */
-  h1 {
-    font-size: 24px !important;
+
+  /* NAVBAR FIXES - Prevent collision */
+  .navbar-content {
+    padding: 0px 12px 18px 12px !important;
   }
-  
-  h2 {
+
+  /* Smaller logo elements */
+  .logo-circle {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .logo-text {
+    font-size: 14px !important;
+  }
+
+  /* Action buttons - not too small */
+  .search-btn,
+  .mobile-menu-btn {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  /* Adjust navbar positioning */
+  .navbar-logo {
+    top: 4px !important;
+    left: 12px !important;
+  }
+
+  .navbar-actions {
+    top: 2px !important;
+    right: 12px !important;
+    gap: 6px !important;
+  }
+
+  /* Smaller navbar blob */
+  .navbar-blob {
+    height: 100px !important;
+  }
+
+  .navbar-organic.scrolled .navbar-blob {
+    height: 85px !important;
+  }
+
+  /* ABOUT SECTION FIXES */
+  .about-image-badge {
+    bottom: 12px !important;
+    left: 12px !important;
+    padding: 10px 16px !important;
+  }
+
+  .badge-number {
     font-size: 20px !important;
   }
+
+  .badge-text {
+    font-size: 11px !important;
+  }
+
+  .about-title {
+    font-size: 20px !important;
+    padding: 0 4px !important;
+  }
+
+  .about-text,
+  .about-text-secondary {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* PRODUCT FILTER BUTTONS - 3 on first row, 2 on second row */
+  .products-filters {
+    gap: 6px !important;
+    margin-bottom: 32px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    padding: 0 4px !important;
+  }
+
+  .filter-btn {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    min-width: 0 !important;
+    flex: 0 1 calc(33.333% - 4px) !important;
+    white-space: nowrap !important;
+    border-radius: 20px !important;
+    text-align: center !important;
+  }
+
+  /* Make last 2 buttons wider when they wrap to second row */
+  .filter-btn:nth-child(4),
+  .filter-btn:nth-child(5) {
+    flex: 0 1 calc(50% - 3px) !important;
+  }
+
+  /* GENERAL TEXT SIZES */
+  h1 {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+  }
+
+  h2 {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+  }
+
+  h3 {
+    font-size: 16px !important;
+  }
+
+
+
+  /* STATS AND FEATURES */
+  .about-stats {
+    padding: 16px 8px !important;
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    padding: 10px 6px !important;
+  }
+
+  .stat-number {
+    font-size: 28px !important;
+  }
+
+  .stat-label {
+    font-size: 10px !important;
+  }
+
+  .feature-card {
+    padding: 10px !important;
+  }
+
+  .feature-icon {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .feature-content h4 {
+    font-size: 12px !important;
+  }
+
+  .feature-content p {
+    font-size: 10px !important;
+  }
+
+  /* PRODUCTS - 320px only - balanced padding and smaller cards */
+  .products-section-new .container-custom {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
   
-  /* Single column for everything */
-  .grid,
-  [class*="grid-"] {
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 0 12px 0 6px !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+  
+  .product-card-new {
+    max-width: 140px !important;
+    width: 100% !important;
+  }
+  
+  /* Smaller add to cart button for 320px */
+  .order-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+  
+  /* GALLERY - 2 per row with proper spacing */
+  .gallery-grid-new {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    padding: 0 8px !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  /* TESTIMONIALS */
+  .testimonials-wrapper {
+    padding: 0 40px !important;
+  }
+
+  .testimonial-nav-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .testimonial-text {
+    font-size: 13px !important;
+  }
+
+  .testimonial-card {
+    padding: 16px 12px !important;
+  }
+
+  /* SEARCH OVERLAY */
+  .search-form-new {
+    padding: 10px 16px !important;
+  }
+
+  .search-form-new input {
+    font-size: 14px !important;
+  }
+
+  /* MOBILE MENU */
+  .mobile-menu {
+    width: 220px !important;
+  }
+
+  .mobile-nav-link {
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+  }
+
+  /* BUTTONS */
+  button,
+  .btn {
+    font-size: 12px !important;
+    padding: 10px 16px !important;
+  }
+
+  /* GENERAL GRID LAYOUTS */
+  .grid:not(.products-grid):not(.gallery-grid-new),
+  [class*="grid-"]:not(.products-grid):not(.gallery-grid-new) {
     grid-template-columns: 1fr !important;
   }
-}
 
+
+}
 
 /* Christmas Hero Wrapper - Mobile Friendly */
 .christmas-hero-wrapper {
@@ -339,21 +580,21 @@ img {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   .christmas-hero-wrapper h1 {
     font-size: 32px !important;
     line-height: 1.2 !important;
   }
-  
+
   .christmas-hero-wrapper h2 {
     font-size: 20px !important;
     line-height: 1.3 !important;
   }
-  
+
   .christmas-hero-wrapper p {
     font-size: 14px !important;
   }
-  
+
   .christmas-hero-wrapper button {
     font-size: 14px !important;
     padding: 12px 20px !important;
@@ -365,29 +606,29 @@ img {
   .products-section-new {
     padding: 60px 0 !important;
   }
-  
+
   .products-section-new .container-custom {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   /* Reduce product card content padding */
   .product-info {
     padding: 12px !important;
   }
-  
+
   .product-name {
     font-size: 14px !important;
   }
-  
+
   .product-description {
     font-size: 12px !important;
   }
-  
+
   .price-value {
     font-size: 18px !important;
   }
-  
+
   .order-btn {
     width: 36px !important;
     height: 36px !important;
@@ -399,31 +640,31 @@ img {
   .about-section-new {
     padding: 60px 0 !important;
   }
-  
+
   .about-section-new .container-custom {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   .about-title {
     font-size: 24px !important;
     padding: 0 8px !important;
   }
-  
+
   .about-text,
   .about-text-secondary {
     font-size: 14px !important;
   }
-  
+
   .feature-icon {
     width: 48px !important;
     height: 48px !important;
   }
-  
+
   .feature-content h4 {
     font-size: 14px !important;
   }
-  
+
   .feature-content p {
     font-size: 12px !important;
   }
@@ -434,12 +675,12 @@ img {
   .gallery-section-new {
     padding: 60px 0 !important;
   }
-  
+
   .gallery-section-new .container-custom {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  
+
   .gallery-title {
     font-size: 24px !important;
   }
@@ -499,21 +740,21 @@ img {
     max-width: calc(100vw - 32px) !important;
     margin: 0 auto !important;
   }
-  
+
   .testimonial-nav-btn {
     width: 40px;
     height: 40px;
   }
-  
+
   .testimonial-text {
     font-size: 16px;
   }
-  
+
   .testimonial-card {
     padding: 24px 16px !important;
     margin: 0 auto !important;
   }
-  
+
   /* Testimonials section container */
   #testimonials .container-custom {
     padding-left: 16px !important;
@@ -525,12 +766,12 @@ img {
   .testimonials-wrapper {
     padding: 0 45px;
   }
-  
+
   .testimonial-nav-btn {
     width: 36px;
     height: 36px;
   }
-  
+
   .testimonial-text {
     font-size: 14px;
   }
