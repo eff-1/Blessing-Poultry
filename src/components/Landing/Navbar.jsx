@@ -66,13 +66,28 @@ export const NavigationBar = () => {
   }, [searchQuery, allProducts])
 
   const scrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    if (id === 'products') {
+      // Scroll to products grid, not section top
+      const productsGrid = document.querySelector('.products-grid')
+      if (productsGrid) {
+        productsGrid.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+      }
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
     setMobileMenuOpen(false)
   }
 
   const handleSearchSelect = (product) => {
-    scrollToSection('products')
-    window.dispatchEvent(new CustomEvent('searchProducts', { detail: product.name }))
+    // Clear any existing search first
+    window.dispatchEvent(new CustomEvent('searchProducts', { detail: '' }))
+    // Then set the new search
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('searchProducts', { detail: product.name }))
+      scrollToSection('products')
+    }, 100)
     setSearchQuery('')
     setSearchOpen(false)
     setSearchResults([])
@@ -81,8 +96,13 @@ export const NavigationBar = () => {
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      scrollToSection('products')
-      window.dispatchEvent(new CustomEvent('searchProducts', { detail: searchQuery }))
+      // Clear any existing search first
+      window.dispatchEvent(new CustomEvent('searchProducts', { detail: '' }))
+      // Then set the new search
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('searchProducts', { detail: searchQuery }))
+        scrollToSection('products')
+      }, 100)
       setSearchQuery('')
       setSearchOpen(false)
       setSearchResults([])

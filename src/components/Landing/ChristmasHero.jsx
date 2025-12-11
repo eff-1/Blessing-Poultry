@@ -1,206 +1,254 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Gift, Tag, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Gift, Sparkles, ShoppingBag, Zap, Star, Heart } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
-export const ChristmasHero = () => {
+const ChristmasHero = () => {
+  const [particles, setParticles] = useState([]);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [snowflakes, setSnowflakes] = useState([]);
-  const [timeLeft, setTimeLeft] = useState({
-    days: 16,
-    hours: 12,
-    minutes: 34,
-    seconds: 45
+  const [heroData, setHeroData] = useState({
+    title: 'CHRISTMAS',
+    subtitle: 'MEGA SALE',
+    description: 'Up to 70% OFF',
+    discount_text: '70% OFF',
+    countdown_days: 23,
+    countdown_hours: 45,
+    countdown_minutes: 12,
+    countdown_seconds: 38,
+    cta_primary: 'Shop Now',
+    cta_secondary: 'View Deals',
+    background_image: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=1200',
+    features: [
+      { icon: 'Gift', text: 'Free Gift' },
+      { icon: 'Sparkles', text: 'Flash Deals' },
+      { icon: 'Heart', text: '100K+ Fans' }
+    ]
   });
 
   useEffect(() => {
-    const flakes = Array.from({ length: 50 }, (_, i) => ({
+    const newParticles = Array.from({ length: 20 }, (_, i) => ({
       id: i,
-      left: Math.random() * 100,
-      animationDuration: 3 + Math.random() * 7,
-      animationDelay: Math.random() * 5,
-      size: 2 + Math.random() * 4
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 3 + Math.random() * 4
     }));
-    setSnowflakes(flakes);
+    setParticles(newParticles);
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else if (prev.days > 0) {
-          return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
+    fetchActiveHero();
   }, []);
+
+  const fetchActiveHero = async () => {
+    try {
+      const { data } = await supabase
+        .from('heroes')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (data) {
+        setHeroData(data);
+      }
+    } catch (error) {
+      console.log('No active hero found, using defaults');
+    }
+  };
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setMousePos({
-      x: ((e.clientX - rect.left) / rect.width - 0.5) * 15,
-      y: ((e.clientY - rect.top) / rect.height - 0.5) * 15
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100
     });
   };
 
-  const scrollToProducts = () => {
-    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const getIconComponent = (iconName) => {
+    const icons = {
+      Gift,
+      Sparkles,
+      ShoppingBag,
+      Zap,
+      Star,
+      Heart
+    };
+    return icons[iconName] || Gift;
   };
 
   return (
-    <div className="christmas-hero-wrapper" onMouseMove={handleMouseMove}>
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <img 
-          src="/images/hero/christmas-banner.jpg" 
-          alt="Christmas feast background"
-          className="w-full h-full object-cover opacity-40"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900/80 via-green-900/70 to-red-950/80"></div>
-      </div>
+    <div className="w-full bg-gradient-to-br from-emerald-50 via-white to-green-50 pt-20 md:pt-24 pb-4 md:pb-8 px-4">
+      {/* Main Hero Card Container */}
+      <div
+        className="relative max-w-7xl mx-auto overflow-hidden rounded-3xl shadow-2xl"
+        onMouseMove={handleMouseMove}
+        style={{
+          backgroundImage: `url('${heroData.background_image}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/90 via-green-900/85 to-red-950/90" />
 
-      {/* Animated Grid Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 christmas-grid" />
-      </div>
+        {/* Animated Background Particles */}
+        {particles.map(p => (
+          <div
+            key={p.id}
+            className="absolute w-1.5 h-1.5 md:w-2 md:h-2 bg-white rounded-full opacity-60"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              animation: `float ${p.duration}s ease-in-out infinite`,
+              animationDelay: `${p.delay}s`
+            }}
+          />
+        ))}
 
-      {/* Snowflakes */}
-      {snowflakes.map(flake => (
+        {/* Gradient Orbs - Hidden on mobile for performance */}
         <div
-          key={flake.id}
-          className="absolute text-white opacity-70 animate-fall pointer-events-none"
+          className="hidden md:block absolute w-64 h-64 lg:w-96 lg:h-96 bg-gradient-radial from-red-500/30 to-transparent rounded-full blur-3xl transition-all duration-300"
           style={{
-            left: `${flake.left}%`,
-            top: '-10px',
-            fontSize: `${flake.size}px`,
-            animationDuration: `${flake.animationDuration}s`,
-            animationDelay: `${flake.animationDelay}s`
+            left: `${mousePos.x - 10}%`,
+            top: `${mousePos.y - 10}%`
           }}
-        >
-          ❄
-        </div>
-      ))}
+        />
+        <div className="hidden md:block absolute top-1/4 right-1/4 w-60 h-60 lg:w-80 lg:h-80 bg-gradient-radial from-green-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
 
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-12 sm:py-20 flex items-center min-h-screen">
-        <div className="w-full max-w-7xl mx-auto">
-          {/* Sale Badge */}
-          <div className="flex justify-center mb-4 sm:mb-6 md:mb-8 animate-bounce-slow">
-            <div className="relative">
-              <div className="absolute inset-0 bg-yellow-400 blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative bg-gradient-to-r from-yellow-400 to-red-500 text-white px-3 sm:px-4 md:px-6 py-2 md:py-3 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-2xl flex items-center gap-2 transform hover:scale-110 transition-transform">
-                <Tag className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                <span className="whitespace-nowrap">CHRISTMAS SALE - UP TO 40% OFF!</span>
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 animate-spin-slow" />
+        {/* Main Content */}
+        <div className="relative z-10 px-4 md:px-8 py-8 md:py-12">
+
+          {/* Top Section - Left Aligned with Badge */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 md:mb-6">
+            {/* Floating Badge - Left */}
+            <div className="mb-4 md:mb-0">
+              <div className="inline-flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 md:px-6 md:py-3 rounded-full shadow-xl transform hover:scale-105 transition-all duration-300">
+                <Zap className="w-3 h-3 md:w-5 md:h-5 animate-pulse" />
+                <span className="font-bold text-xs md:text-sm tracking-wider">LIMITED TIME</span>
+                <Sparkles className="w-3 h-3 md:w-5 md:h-5 animate-pulse" />
               </div>
             </div>
-          </div>
 
-          {/* Main Title */}
-          <div 
-            className="text-center mb-4 sm:mb-6 md:mb-8"
-            style={{
-              transform: `translate(${mousePos.x * 0.3}px, ${mousePos.y * 0.3}px)`,
-              transition: 'transform 0.2s ease-out'
-            }}
-          >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-8xl font-black text-white mb-2 sm:mb-3 md:mb-4 leading-tight">
-              <span className="inline-block animate-shimmer bg-gradient-to-r from-white via-red-200 to-green-200 bg-clip-text text-transparent bg-300">
-                Festive Feast
-              </span>
-            </h1>
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-6xl font-bold text-red-100 mb-3 sm:mb-4 md:mb-6">
-              Premium Poultry for Your
-              <span className="text-yellow-300 block mt-2 animate-pulse-glow">Christmas Table</span>
-            </h2>
-          </div>
-
-          {/* Subtitle */}
-          <p className="text-center text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-white/90 mb-4 sm:mb-6 md:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            Fresh, healthy, and naturally raised poultry products. 
-            <span className="text-yellow-300 font-bold"> Premium quality</span> delivered 
-            <span className="text-green-300 font-bold"> straight to your door</span> this holiday season! 🎄
-          </p>
-
-          {/* Countdown Timer */}
-          <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 px-4">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-3 sm:p-4 md:p-6 border-2 border-white/20 shadow-2xl w-full max-w-lg">
-              <p className="text-yellow-300 font-bold text-center mb-2 sm:mb-3 md:mb-4 text-sm sm:text-base md:text-lg">
-                🎅 SALE ENDS IN:
-              </p>
-              <div className="flex gap-2 sm:gap-3 md:gap-4 justify-center">
+            {/* Countdown Timer - Right on desktop, below on mobile */}
+            <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-3 md:p-4 shadow-xl w-full md:w-auto">
+              <p className="text-yellow-300 font-semibold mb-2 text-xs md:text-sm text-center">🎄 Sale Ends In:</p>
+              <div className="flex gap-2 md:gap-3 justify-center">
                 {[
-                  { label: 'DAYS', value: timeLeft.days },
-                  { label: 'HRS', value: timeLeft.hours },
-                  { label: 'MIN', value: timeLeft.minutes },
-                  { label: 'SEC', value: timeLeft.seconds }
-                ].map((item, idx) => (
-                  <div key={idx} className="text-center">
-                    <div className="bg-gradient-to-br from-red-600 to-green-700 rounded-lg md:rounded-xl p-2 sm:p-3 md:p-4 min-w-[50px] sm:min-w-[60px] md:min-w-[80px] shadow-xl transform hover:scale-110 transition-transform">
-                      <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white">
-                        {String(item.value).padStart(2, '0')}
-                      </div>
+                  heroData.countdown_days.toString().padStart(2, '0'),
+                  heroData.countdown_hours.toString().padStart(2, '0'),
+                  heroData.countdown_minutes.toString().padStart(2, '0'),
+                  heroData.countdown_seconds.toString().padStart(2, '0')
+                ].map((num, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white text-lg md:text-2xl font-black w-10 h-10 md:w-14 md:h-14 rounded-lg flex items-center justify-center shadow-lg">
+                      {num}
                     </div>
-                    <div className="text-white/80 text-[10px] sm:text-xs md:text-sm font-semibold mt-1 md:mt-2">
-                      {item.label}
-                    </div>
+                    <span className="text-white/70 text-[9px] md:text-xs mt-1 font-semibold">
+                      {['DAY', 'HRS', 'MIN', 'SEC'][i]}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center items-center mb-8 sm:mb-10 md:mb-12 px-4">
-            <button 
-              onClick={scrollToProducts}
-              className="w-full sm:w-auto group relative bg-gradient-to-r from-green-600 to-green-700 text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-full font-bold text-base sm:text-lg md:text-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all hover:shadow-green-500/50"
+          {/* Main Headline - Centered */}
+          <div className="text-center mb-4 md:mb-6">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-none">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-yellow-300 to-green-400 animate-gradient">
+                {heroData.title}
+              </span>
+              <span className="block text-white drop-shadow-2xl mt-1 md:mt-2">
+                {heroData.subtitle}
+              </span>
+            </h1>
+          </div>
+
+          {/* Subheadline - Centered */}
+          <div className="text-center mb-4 md:mb-6">
+            <p className="text-lg md:text-2xl text-yellow-200 font-semibold tracking-wide">
+              {heroData.description} <span className="text-3xl md:text-4xl font-black text-yellow-400 inline-block animate-pulse">{heroData.discount_text}</span>
+            </p>
+          </div>
+
+          {/* Feature Pills - Centered */}
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-4 md:mb-6">
+            {heroData.features.map((item, i) => {
+              const IconComponent = getIconComponent(item.icon);
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-1.5 md:gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-white hover:bg-white/20 hover:scale-105 transition-all duration-300 cursor-pointer text-xs md:text-sm"
+                >
+                  <IconComponent className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="font-semibold">{item.text}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* CTA Buttons - Centered */}
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+            <button
+              onClick={() => scrollToSection('products')}
+              className="group relative px-8 md:px-10 py-3 md:py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white text-base md:text-lg font-bold rounded-full shadow-xl hover:shadow-red-500/50 transform hover:scale-105 transition-all duration-300 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative flex items-center justify-center gap-2 sm:gap-3">
-                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-                <span>Shop Christmas Deals</span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 group-hover:translate-x-2 transition-transform" />
-              </div>
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                <ShoppingBag className="w-4 h-4 md:w-5 md:h-5 group-hover:animate-bounce" />
+                {heroData.cta_primary}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
-            <button className="w-full sm:w-auto group relative bg-white/10 backdrop-blur-md text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-full font-bold text-base sm:text-lg md:text-xl border-2 border-white/30 shadow-xl hover:bg-white/20 transform hover:scale-105 transition-all">
-              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <Gift className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-                <span>Gift Packages</span>
-              </div>
+
+            <button
+              onClick={() => scrollToSection('products')}
+              className="px-8 md:px-10 py-3 md:py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-full hover:bg-white hover:text-red-900 transform hover:scale-105 transition-all duration-300 shadow-xl"
+            >
+              {heroData.cta_secondary}
             </button>
           </div>
 
-          {/* Feature Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-5xl mx-auto px-4">
-            {[
-              { icon: '🎁', title: 'Free Gift Wrapping', desc: 'Beautiful festive packaging' },
-              { icon: '🚚', title: 'Fast Delivery', desc: 'Order today, delivered tomorrow' },
-              { icon: '⭐', title: 'Premium Quality', desc: 'Farm-fresh guarantee' }
-            ].map((feature, idx) => (
-              <div
-                key={idx}
-                className="bg-white/10 backdrop-blur-lg rounded-xl p-3 sm:p-4 md:p-6 border border-white/20 text-center transform hover:scale-105 hover:bg-white/20 transition-all shadow-xl"
-              >
-                <div className="text-3xl sm:text-4xl md:text-5xl mb-2 md:mb-3">{feature.icon}</div>
-                <h3 className="text-white font-bold text-sm sm:text-base md:text-lg mb-1 md:mb-2">{feature.title}</h3>
-                <p className="text-white/80 text-xs sm:text-sm md:text-base">{feature.desc}</p>
-              </div>
-            ))}
+          {/* Floating Icons - Hidden on mobile */}
+          <div className="hidden md:block absolute top-8 left-8 animate-float">
+            <Gift className="w-10 h-10 lg:w-12 lg:h-12 text-red-400 opacity-70" />
+          </div>
+          <div className="hidden md:block absolute top-12 right-12 animate-float" style={{ animationDelay: '1s' }}>
+            <Star className="w-8 h-8 lg:w-10 lg:h-10 text-yellow-400 opacity-70" />
+          </div>
+          <div className="hidden md:block absolute bottom-12 left-12 animate-float" style={{ animationDelay: '2s' }}>
+            <Sparkles className="w-10 h-10 lg:w-14 lg:h-14 text-green-400 opacity-70" />
           </div>
         </div>
+
+        {/* Bottom Gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 md:h-32 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
-        <div className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-white/50 rounded-full flex justify-center pt-2">
-          <div className="w-1 h-2 sm:w-1.5 sm:h-3 bg-white/70 rounded-full animate-scroll"></div>
-        </div>
-      </div>
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
     </div>
   );
 };
+
+
+
+export { ChristmasHero };

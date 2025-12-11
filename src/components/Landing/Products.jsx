@@ -80,7 +80,10 @@ export const Products = () => {
               key={cat}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setFilter(cat)}
+              onClick={() => {
+                setFilter(cat)
+                setSearchQuery('') // Clear search when filter is clicked
+              }}
               className={`filter-btn ${filter === cat ? 'active' : ''}`}
             >
               {cat}

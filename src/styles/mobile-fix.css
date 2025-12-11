@@ -367,13 +367,13 @@ img {
     gap: 6px !important;
   }
 
-  /* Smaller navbar blob */
+  /* Smaller navbar blob - increased by 3px */
   .navbar-blob {
-    height: 100px !important;
+    height: 103px !important;
   }
 
   .navbar-organic.scrolled .navbar-blob {
-    height: 85px !important;
+    height: 88px !important;
   }
 
   /* ABOUT SECTION FIXES */
@@ -563,13 +563,24 @@ img {
     padding: 16px 12px !important;
   }
 
-  /* SEARCH OVERLAY */
+  /* SEARCH OVERLAY - Better layout for 320px */
   .search-form-new {
     padding: 10px 16px !important;
+    gap: 8px !important;
   }
 
   .search-form-new input {
     font-size: 14px !important;
+  }
+
+  .search-close {
+    padding: 2px !important;
+    margin-left: 0 !important;
+    margin-right: -4px !important;
+  }
+
+  .search-icon {
+    margin-right: 4px !important;
   }
 
   /* MOBILE MENU */
