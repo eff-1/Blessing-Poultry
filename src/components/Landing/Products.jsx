@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabaseClient'
 import { ProductCard } from './ProductCard'
 import { LoadingSpinner } from '../Shared/LoadingSpinner'
+import { CustomSelect } from '../Shared/CustomSelect'
 import { FiSearch } from 'react-icons/fi'
 
 export const Products = () => {
@@ -11,7 +12,19 @@ export const Products = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const categories = ['All Products', 'Eggs', 'Broilers', 'Layers', 'Day-Old Chicks', 'Feeds']
+  const categories = [
+    'All Products', 
+    'Eggs', 
+    'Broilers', 
+    'Layers', 
+    'Day-Old Chicks', 
+    'Feeds', 
+    'Vaccines', 
+    'Medications', 
+    'Equipment', 
+    'Supplements',
+    'Others'
+  ]
 
   useEffect(() => {
     fetchProducts()
@@ -73,22 +86,39 @@ export const Products = () => {
           />
         </motion.div>
 
-        {/* Category Filters */}
+        {/* Category Filters - Mobile Dropdown, Desktop Buttons */}
         <div className="products-filters">
-          {categories.map((cat) => (
-            <motion.button
-              key={cat}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setFilter(cat)
-                setSearchQuery('') // Clear search when filter is clicked
+          {/* Mobile Dropdown */}
+          <div className="mobile-filter-dropdown md:hidden">
+            <CustomSelect
+              value={filter}
+              onChange={(value) => {
+                setFilter(value)
+                setSearchQuery('')
               }}
-              className={`filter-btn ${filter === cat ? 'active' : ''}`}
-            >
-              {cat}
-            </motion.button>
-          ))}
+              options={categories.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Select category"
+              className="w-full"
+            />
+          </div>
+
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex desktop-filter-buttons">
+            {categories.map((cat) => (
+              <motion.button
+                key={cat}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setFilter(cat)
+                  setSearchQuery('') // Clear search when filter is clicked
+                }}
+                className={`filter-btn ${filter === cat ? 'active' : ''}`}
+              >
+                {cat}
+              </motion.button>
+            ))}
+          </div>
         </div>
 
         {/* Products Grid */}

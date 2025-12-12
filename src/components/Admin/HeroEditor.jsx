@@ -22,6 +22,17 @@ export const HeroEditor = ({ hero, onClose, onSave }) => {
   })
   const [saving, setSaving] = useState(false)
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    document.body.style.overflow = 'hidden'
+    
+    return () => {
+      document.body.classList.remove('modal-open')
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
+
   useEffect(() => {
     if (hero) {
       setFormData({
@@ -106,16 +117,18 @@ export const HeroEditor = ({ hero, onClose, onSave }) => {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 z-[9999] flex items-start justify-center p-4 overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
-        className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-8 mx-auto relative"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -131,9 +144,9 @@ export const HeroEditor = ({ hero, onClose, onSave }) => {
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
           {/* Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Hero Name
@@ -362,10 +375,10 @@ export const HeroEditor = ({ hero, onClose, onSave }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 p-4 md:p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
-            className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full sm:w-auto px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             Cancel
           </button>
@@ -373,7 +386,7 @@ export const HeroEditor = ({ hero, onClose, onSave }) => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
           >
             <FiSave />
             {saving ? 'Saving...' : 'Save Hero'}

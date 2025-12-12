@@ -1,26 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Gift, Sparkles, ShoppingBag, Zap, Star, Heart } from 'lucide-react';
+import { GiChicken } from 'react-icons/gi';
 import { supabase } from '../../lib/supabaseClient';
 
 const ChristmasHero = () => {
   const [particles, setParticles] = useState([]);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [heroData, setHeroData] = useState({
     title: 'CHRISTMAS',
     subtitle: 'MEGA SALE',
-    description: 'Up to 70% OFF',
-    discount_text: '70% OFF',
-    countdown_days: 23,
-    countdown_hours: 45,
-    countdown_minutes: 12,
-    countdown_seconds: 38,
+    description: '50% OFF',
+    discount_text: '50% OFF',
     cta_primary: 'Shop Now',
-    cta_secondary: 'View Deals',
     background_image: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=1200',
     features: [
       { icon: 'Gift', text: 'Free Gift' },
-      { icon: 'Sparkles', text: 'Flash Deals' },
-      { icon: 'Heart', text: '100K+ Fans' }
+      { icon: 'Sparkles', text: 'Flash Deals' }
     ]
   });
 
@@ -34,19 +30,58 @@ const ChristmasHero = () => {
     }));
     setParticles(newParticles);
 
+    // Real countdown timer to December 26th, 2024
+    const targetDate = new Date('2024-12-26T00:00:00').getTime();
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const difference = targetDate - now;
+
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
+
     fetchActiveHero();
+
+    return () => clearInterval(timer);
   }, []);
 
   const fetchActiveHero = async () => {
     try {
-      const { data } = await supabase
+      const { data: heroData } = await supabase
         .from('heroes')
-        .select('*')
+        .select(`
+          *,
+          hero_features (
+            icon,
+            text,
+            display_order
+          )
+        `)
         .eq('is_active', true)
         .single();
 
-      if (data) {
-        setHeroData(data);
+      if (heroData) {
+        // Transform features array to match component structure
+        const features = heroData.hero_features
+          ?.sort((a, b) => a.display_order - b.display_order)
+          ?.map(f => ({ icon: f.icon, text: f.text })) || [];
+
+        setHeroData({
+          ...heroData,
+          features
+        });
       }
     } catch (error) {
       console.log('No active hero found, using defaults');
@@ -127,7 +162,7 @@ const ChristmasHero = () => {
             {/* Floating Badge - Left */}
             <div className="mb-4 md:mb-0">
               <div className="inline-flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 md:px-6 md:py-3 rounded-full shadow-xl transform hover:scale-105 transition-all duration-300">
-                <Zap className="w-3 h-3 md:w-5 md:h-5 animate-pulse" />
+                <GiChicken className="w-3 h-3 md:w-5 md:h-5 animate-pulse" />
                 <span className="font-bold text-xs md:text-sm tracking-wider">LIMITED TIME</span>
                 <Sparkles className="w-3 h-3 md:w-5 md:h-5 animate-pulse" />
               </div>
@@ -138,10 +173,10 @@ const ChristmasHero = () => {
               <p className="text-yellow-300 font-semibold mb-2 text-xs md:text-sm text-center">🎄 Sale Ends In:</p>
               <div className="flex gap-2 md:gap-3 justify-center">
                 {[
-                  heroData.countdown_days.toString().padStart(2, '0'),
-                  heroData.countdown_hours.toString().padStart(2, '0'),
-                  heroData.countdown_minutes.toString().padStart(2, '0'),
-                  heroData.countdown_seconds.toString().padStart(2, '0')
+                  timeLeft.days.toString().padStart(2, '0'),
+                  timeLeft.hours.toString().padStart(2, '0'),
+                  timeLeft.minutes.toString().padStart(2, '0'),
+                  timeLeft.seconds.toString().padStart(2, '0')
                 ].map((num, i) => (
                   <div key={i} className="flex flex-col items-center">
                     <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white text-lg md:text-2xl font-black w-10 h-10 md:w-14 md:h-14 rounded-lg flex items-center justify-center shadow-lg">
@@ -171,7 +206,7 @@ const ChristmasHero = () => {
           {/* Subheadline - Centered */}
           <div className="text-center mb-4 md:mb-6">
             <p className="text-lg md:text-2xl text-yellow-200 font-semibold tracking-wide">
-              {heroData.description} <span className="text-3xl md:text-4xl font-black text-yellow-400 inline-block animate-pulse">{heroData.discount_text}</span>
+              <span className="text-3xl md:text-4xl font-black text-yellow-400 inline-block animate-pulse">{heroData.discount_text}</span>
             </p>
           </div>
 
@@ -204,12 +239,7 @@ const ChristmasHero = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
 
-            <button
-              onClick={() => scrollToSection('products')}
-              className="px-8 md:px-10 py-3 md:py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-full hover:bg-white hover:text-red-900 transform hover:scale-105 transition-all duration-300 shadow-xl"
-            >
-              {heroData.cta_secondary}
-            </button>
+
           </div>
 
           {/* Floating Icons - Hidden on mobile */}

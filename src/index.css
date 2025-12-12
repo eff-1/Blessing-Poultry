@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import modal fixes */
+@import './styles/modal-fix.css';
+
+/* Custom Scrollbar Styles */
+@layer utilities {
+  /* Hide scrollbar on mobile/touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Apply to all scrollable elements on mobile */
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  
+  /* Custom scrollbar for desktop */
+  @media (hover: hover) and (pointer: fine) {
+    .scrollbar-thin {
+      scrollbar-width: thin;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+      background-color: #d1d5db;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
+      background-color: #9ca3af;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-track-transparent::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background-color: #6b7280;
+    }
+  }
+  
+  /* Ensure dropdowns can extend beyond containers */
+  .products-filters,
+  .mobile-filter-dropdown {
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Fix any overflow issues that might cut off dropdowns */
+  .products-section-new,
+  .container-custom {
+    overflow: visible !important;
+  }
+}

@@ -6,17 +6,23 @@ export const formatPrice = (price) => {
 }
 
 export const uploadImage = async (supabase, bucket, file) => {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Math.random()}.${fileExt}`
+  // Handle cases where file might not have a name (like compressed blobs)
+  const fileName = file.name || 'image'
+  const fileExt = fileName.includes('.') ? fileName.split('.').pop() : 'jpg'
+  const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+  
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(fileName, file)
+    .upload(uniqueFileName, file)
   
-  if (error) throw error
+  if (error) {
+    console.error('Upload error:', error)
+    throw error
+  }
   
   const { data: { publicUrl } } = supabase.storage
     .from(bucket)
-    .getPublicUrl(fileName)
+    .getPublicUrl(uniqueFileName)
   
   return publicUrl
 }

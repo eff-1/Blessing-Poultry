@@ -1,5 +1,5 @@
 import { NavigationBar } from '../components/Landing/Navbar'
-import { ChristmasHero } from '../components/Landing/ChristmasHero'
+import DynamicHero from '../components/Landing/DynamicHero'
 import { About } from '../components/Landing/About'
 import { Products } from '../components/Landing/Products'
 import { Gallery } from '../components/Landing/Gallery'
@@ -12,7 +12,7 @@ export const Home = () => {
   return (
     <>
       <NavigationBar />
-      <ChristmasHero />
+      <DynamicHero />
       <About />
       <Products />
       <Gallery />

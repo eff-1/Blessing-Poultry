@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { GiChicken } from 'react-icons/gi'
-import { FiMenu, FiX, FiSearch } from 'react-icons/fi'
+import { FiMenu, FiX, FiSearch, FiUser } from 'react-icons/fi'
 import { supabase } from '../../lib/supabaseClient'
 
 export const NavigationBar = () => {
@@ -65,14 +66,36 @@ export const NavigationBar = () => {
     }
   }, [searchQuery, allProducts])
 
+  // Focus search input when search opens and disable scroll
+  useEffect(() => {
+    if (searchOpen) {
+      // Disable page scrolling
+      document.body.style.overflow = 'hidden'
+      
+      // Focus the input
+      setTimeout(() => {
+        const searchInput = document.querySelector('.search-form-new input')
+        if (searchInput) {
+          searchInput.focus()
+        }
+      }, 100)
+    } else {
+      // Re-enable page scrolling when search closes
+      document.body.style.overflow = 'unset'
+    }
+
+    // Cleanup function to ensure scroll is re-enabled
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [searchOpen])
+
   const scrollToSection = (id) => {
     if (id === 'products') {
-      // Scroll to products grid, not section top
-      const productsGrid = document.querySelector('.products-grid')
-      if (productsGrid) {
-        productsGrid.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      } else {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+      // Scroll to products section top for better visibility
+      const productsSection = document.getElementById('products')
+      if (productsSection) {
+        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     } else {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -175,6 +198,18 @@ export const NavigationBar = () => {
             >
               <FiSearch size={18} />
             </motion.button>
+
+            {/* Desktop Admin Login - Hidden on Mobile */}
+            <Link to="/login" className="hidden md:block">
+              <motion.button
+                className="admin-btn"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                title="Admin Login"
+              >
+                <FiUser size={18} />
+              </motion.button>
+            </Link>
 
             <motion.button
               className="mobile-menu-btn"
@@ -302,6 +337,26 @@ export const NavigationBar = () => {
                     {item.label}
                   </motion.button>
                 ))}
+                
+                {/* Admin Login Link */}
+                <motion.div
+                  className="mobile-menu-divider"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: navItems.length * 0.08, type: 'spring', stiffness: 100 }}
+                />
+                <Link to="/login">
+                  <motion.button
+                    className="mobile-nav-link admin-link"
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (navItems.length + 1) * 0.08, type: 'spring', stiffness: 100 }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <FiUser size={20} />
+                    Admin Login
+                  </motion.button>
+                </Link>
               </div>
             </motion.div>
           </>
