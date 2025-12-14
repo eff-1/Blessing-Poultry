@@ -131,7 +131,7 @@ export const VerifyOTP = () => {
             </motion.div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h1>
             <p className="text-gray-600">
-              We've sent a 6-digit verification code to
+              We've sent an 8-digit verification code to
             </p>
             <p className="font-medium text-green-600">{email}</p>
           </div>
@@ -147,22 +147,22 @@ export const VerifyOTP = () => {
                 <input
                   type="text"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-center text-lg font-mono tracking-widest"
-                  placeholder="000000"
-                  maxLength={6}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-center text-lg font-mono tracking-wider"
+                  placeholder="00000000"
+                  maxLength={8}
                   required
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Enter the 6-digit code from your email
+                Enter the 8-digit code from your email
               </p>
             </div>
 
             {/* Verify Button */}
             <motion.button
               type="submit"
-              disabled={loading || otp.length !== 6}
+              disabled={loading || otp.length !== 8}
               className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
