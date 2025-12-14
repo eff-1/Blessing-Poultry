@@ -88,17 +88,15 @@ export const Signup = () => {
     setLoading(true)
 
     try {
-      // Sign up the user with email confirmation required
+      // Sign up the user with OTP email verification (no redirect needed)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName
-          },
-          emailRedirectTo: `https://blessing-poultry.vercel.app/auth/confirm`,
-          // Force email confirmation
-          captchaToken: null
+          }
+          // No emailRedirectTo - we'll use OTP verification instead
         }
       })
 
@@ -128,8 +126,10 @@ export const Signup = () => {
           }
         )
         
-        // Redirect to email sent confirmation page
-        navigate('/auth/email-sent')
+        // Redirect to OTP verification page
+        navigate('/verify-otp', { 
+          state: { email: formData.email }
+        })
       }
     } catch (error) {
       console.error('Signup error:', error)
