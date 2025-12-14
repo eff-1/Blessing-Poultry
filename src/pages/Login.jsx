@@ -28,22 +28,22 @@ export const Login = () => {
       })
 
       if (error) {
-        if (error.message.includes('Email not confirmed')) {
+        if (error.message.includes('Email not confirmed') || error.message.includes('email_confirmed_at')) {
           showError('Please verify your email address before logging in. Check your inbox for the verification link.', {
             title: 'Email Not Verified'
           })
+          return
         } else {
           throw error
         }
-        return
       }
 
+      // Additional check for email confirmation
       if (data.user && !data.user.email_confirmed_at) {
-        showError('Please verify your email address before logging in. We can resend the verification email if needed.', {
+        showError('Your email address is not verified. Please check your inbox and click the verification link.', {
           title: 'Email Not Verified'
         })
         await supabase.auth.signOut()
-        setShowForgotPassword(true) // Show resend option
         return
       }
 
