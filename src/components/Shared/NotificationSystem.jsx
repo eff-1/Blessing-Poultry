@@ -30,7 +30,8 @@ export const NotificationProvider = ({ children }) => {
       ...notification
     }
     
-    setNotifications(prev => [...prev, newNotification])
+    // Clear existing notifications and show only one at a time
+    setNotifications([newNotification])
     
     // Auto remove after duration
     if (newNotification.duration > 0) {
@@ -99,7 +100,7 @@ export const NotificationProvider = ({ children }) => {
 
 const NotificationContainer = ({ notifications, removeNotification }) => {
   return (
-    <div className="fixed top-4 right-4 z-[10000] space-y-2 max-w-sm w-full">
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[10000] space-y-2 max-w-sm sm:w-full">
       <AnimatePresence>
         {notifications.map((notification) => (
           <NotificationCard

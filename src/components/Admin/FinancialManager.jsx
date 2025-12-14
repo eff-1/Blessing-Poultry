@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabaseClient'
 import { useNotification } from '../Shared/NotificationSystem'
 import { Modal } from '../Shared/Modal'
 import { Button } from '../Shared/Button'
+import { LoadingButton } from '../Shared/LoadingButton'
+import { PageLoader } from '../Shared/LoadingSpinner'
 import { 
   FiPlus, 
   FiDollarSign, 
@@ -23,6 +25,8 @@ export const FinancialManager = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [showIncomeModal, setShowIncomeModal] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [addingExpense, setAddingExpense] = useState(false)
+  const [addingIncome, setAddingIncome] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState('month') // week, month, year
   const [expenseForm, setExpenseForm] = useState({
     description: '',
@@ -102,6 +106,7 @@ export const FinancialManager = () => {
 
   const handleAddExpense = async (e) => {
     e.preventDefault()
+    setAddingExpense(true)
     try {
       const { error } = await supabase
         .from('expenses')
@@ -126,11 +131,14 @@ export const FinancialManager = () => {
     } catch (error) {
       console.error('Error adding expense:', error)
       showError('Failed to add expense')
+    } finally {
+      setAddingExpense(false)
     }
   }
 
   const handleAddIncome = async (e) => {
     e.preventDefault()
+    setAddingIncome(true)
     try {
       const { error } = await supabase
         .from('income')
@@ -154,6 +162,8 @@ export const FinancialManager = () => {
     } catch (error) {
       console.error('Error adding income:', error)
       showError('Failed to add income')
+    } finally {
+      setAddingIncome(false)
     }
   }
 
@@ -169,11 +179,7 @@ export const FinancialManager = () => {
   const { totalExpenses, totalIncome, profit, profitMargin } = calculateTotals()
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    )
+    return <PageLoader text="Loading financial data..." />
   }
 
   return (
@@ -385,7 +391,9 @@ export const FinancialManager = () => {
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">Add Expense</Button>
+            <LoadingButton type="submit" loading={addingExpense} className="flex-1">
+              {addingExpense ? 'Adding...' : 'Add Expense'}
+            </LoadingButton>
             <Button type="button" variant="outline" onClick={() => setShowExpenseModal(false)} className="flex-1">
               Cancel
             </Button>
@@ -446,7 +454,9 @@ export const FinancialManager = () => {
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">Add Income</Button>
+            <LoadingButton type="submit" loading={addingIncome} className="flex-1">
+              {addingIncome ? 'Adding...' : 'Add Income'}
+            </LoadingButton>
             <Button type="button" variant="outline" onClick={() => setShowIncomeModal(false)} className="flex-1">
               Cancel
             </Button>

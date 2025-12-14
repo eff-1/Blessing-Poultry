@@ -58,11 +58,8 @@ export const Admin = () => {
         {/* Top navbar */}
         <AdminNavbar user={user} />
         
-        {/* Main content - scrollable */}
-        <main className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-          {/* Spacer for fixed navbar */}
-          <div className="h-16"></div>
-          
+        {/* Main content - scrollable with proper spacing */}
+        <main className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pt-16">
           {/* Content with padding */}
           <div className="p-4 md:p-6">
             <motion.div
