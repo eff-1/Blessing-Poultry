@@ -96,7 +96,9 @@ export const Signup = () => {
           data: {
             full_name: formData.fullName
           },
-          emailRedirectTo: `https://blessing-poultry.vercel.app/auth/confirm`
+          emailRedirectTo: `https://blessing-poultry.vercel.app/auth/confirm`,
+          // Force email confirmation
+          captchaToken: null
         }
       })
 
@@ -126,7 +128,7 @@ export const Signup = () => {
           }
         )
         
-        // Redirect to a confirmation page
+        // Redirect to email sent confirmation page
         navigate('/auth/email-sent')
       }
     } catch (error) {
