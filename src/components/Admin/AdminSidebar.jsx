@@ -10,7 +10,8 @@ import {
   FiHome,
   FiBarChart,
   FiUsers,
-  FiCamera
+  FiCamera,
+  FiDollarSign
 } from 'react-icons/fi'
 import { GiChicken } from 'react-icons/gi'
 
@@ -24,6 +25,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
     { id: 'orders', label: 'Orders', icon: FiShoppingCart },
     { id: 'gallery', label: 'Gallery', icon: FiCamera },
     { id: 'customers', label: 'Testimonials', icon: FiUsers },
+    { id: 'financial', label: 'Financial Manager', icon: FiDollarSign },
     { id: 'analytics', label: 'Analytics', icon: FiBarChart },
     { id: 'settings', label: 'Settings', icon: FiSettings }
   ]

@@ -11,6 +11,7 @@ import { ManageContact } from '../components/Admin/ManageContact'
 import { ManageAbout } from '../components/Admin/ManageAbout'
 import { SiteAnalytics } from '../components/Admin/SiteAnalytics'
 import { AdminSettings } from '../components/Admin/AdminSettings'
+import { FinancialManager } from '../components/Admin/FinancialManager'
 import { supabase } from '../lib/supabaseClient'
 
 export const Admin = () => {
@@ -100,6 +101,11 @@ export const Admin = () => {
               {activeTab === 'analytics' && (
                 <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm">
                   <SiteAnalytics />
+                </div>
+              )}
+              {activeTab === 'financial' && (
+                <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm">
+                  <FinancialManager />
                 </div>
               )}
               {activeTab === 'settings' && (

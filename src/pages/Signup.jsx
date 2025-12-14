@@ -96,7 +96,7 @@ export const Signup = () => {
           data: {
             full_name: formData.fullName
           },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`
+          emailRedirectTo: `https://blessing-poultry.vercel.app/auth/confirm`
         }
       })
 

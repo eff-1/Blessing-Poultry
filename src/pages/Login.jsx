@@ -39,10 +39,11 @@ export const Login = () => {
       }
 
       if (data.user && !data.user.email_confirmed_at) {
-        showError('Please verify your email address before logging in. Check your inbox for the verification link.', {
+        showError('Please verify your email address before logging in. We can resend the verification email if needed.', {
           title: 'Email Not Verified'
         })
         await supabase.auth.signOut()
+        setShowForgotPassword(true) // Show resend option
         return
       }
 
@@ -69,7 +70,7 @@ export const Login = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `https://blessing-poultry.vercel.app/reset-password`,
       })
 
       if (error) throw error
@@ -83,6 +84,34 @@ export const Login = () => {
       console.error('Reset password error:', error)
       showError(error.message || 'Failed to send reset email.', {
         title: 'Reset Failed'
+      })
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResetLoading(true)
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: resetEmail,
+        options: {
+          emailRedirectTo: 'https://blessing-poultry.vercel.app/auth/confirm'
+        }
+      })
+
+      if (error) throw error
+
+      showSuccess('Verification email sent! Check your inbox and click the link to verify your account.', {
+        title: 'Verification Email Sent'
+      })
+      setShowForgotPassword(false)
+      setResetEmail('')
+    } catch (error) {
+      console.error('Resend verification error:', error)
+      showError(error.message || 'Failed to resend verification email.', {
+        title: 'Resend Failed'
       })
     } finally {
       setResetLoading(false)

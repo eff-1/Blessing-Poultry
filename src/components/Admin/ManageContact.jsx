@@ -24,7 +24,16 @@ export const ManageContact = () => {
   const fetchContact = async () => {
     const { data } = await supabase.from('contact_info').select('*').single()
     if (data) {
-      setFormData(data)
+      // Ensure all values are strings, not null
+      setFormData({
+        phone: data.phone || '',
+        whatsapp: data.whatsapp || '',
+        email: data.email || '',
+        address: data.address || '',
+        facebook: data.facebook || '',
+        instagram: data.instagram || '',
+        twitter: data.twitter || '',
+      })
       setContactId(data.id)
     }
   }
