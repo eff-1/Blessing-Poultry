@@ -153,7 +153,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
               onClick={() => handleButtonClick('÷')}
               className="h-8 sm:h-10 rounded-lg font-medium text-sm sm:text-base text-white active:scale-95 transition-all"
               style={{
-                background: 'linear-gradient(145deg, #3b82f6, #2563eb)'
+                background: 'linear-gradient(145deg, #10b981, #059669)'
               }}
             >
               ÷
@@ -178,7 +178,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
               onClick={() => handleButtonClick('×')}
               className="h-8 sm:h-10 rounded-lg font-medium text-sm sm:text-base text-white active:scale-95 transition-all"
               style={{
-                background: 'linear-gradient(145deg, #3b82f6, #2563eb)'
+                background: 'linear-gradient(145deg, #10b981, #059669)'
               }}
             >
               ×
@@ -203,7 +203,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
               onClick={() => handleButtonClick('-')}
               className="h-8 sm:h-10 rounded-lg font-medium text-sm sm:text-base text-white active:scale-95 transition-all"
               style={{
-                background: 'linear-gradient(145deg, #3b82f6, #2563eb)'
+                background: 'linear-gradient(145deg, #10b981, #059669)'
               }}
             >
               −
@@ -228,7 +228,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
               onClick={() => handleButtonClick('+')}
               className="h-8 sm:h-10 rounded-lg font-medium text-sm sm:text-base text-white active:scale-95 transition-all"
               style={{
-                background: 'linear-gradient(145deg, #3b82f6, #2563eb)'
+                background: 'linear-gradient(145deg, #10b981, #059669)'
               }}
             >
               +
