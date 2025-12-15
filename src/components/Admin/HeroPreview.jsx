@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
-import { ChristmasHero } from '../Landing/ChristmasHero'
+import ChristmasHero from '../Landing/ChristmasHero'
 import { RamadanHero } from '../Landing/RamadanHero'
 import EasterHero from '../Landing/EasterHero'
 import NormalSeasonHero from '../Landing/NormalSeasonHero'

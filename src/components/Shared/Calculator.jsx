@@ -5,7 +5,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-sm bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
           <h2 className="text-base font-semibold text-white">{title}</h2>
@@ -24,6 +24,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 
 const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
   const [display, setDisplay] = useState('0')
+  const [calculation, setCalculation] = useState('')
   const [previousValue, setPreviousValue] = useState(null)
   const [operation, setOperation] = useState(null)
   const [waitingForOperand, setWaitingForOperand] = useState(false)
@@ -31,23 +32,33 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
   const inputNumber = (num) => {
     if (waitingForOperand) {
       setDisplay(String(num))
+      setCalculation(calculation + num)
       setWaitingForOperand(false)
     } else {
-      setDisplay(display === '0' ? String(num) : display + num)
+      const newDisplay = display === '0' ? String(num) : display + num
+      setDisplay(newDisplay)
+      if (calculation === '' || calculation === '0') {
+        setCalculation(String(num))
+      } else if (!waitingForOperand) {
+        setCalculation(calculation + num)
+      }
     }
   }
 
   const inputDecimal = () => {
     if (waitingForOperand) {
       setDisplay('0.')
+      setCalculation(calculation + '0.')
       setWaitingForOperand(false)
     } else if (display.indexOf('.') === -1) {
       setDisplay(display + '.')
+      setCalculation(calculation + '.')
     }
   }
 
   const clear = () => {
     setDisplay('0')
+    setCalculation('')
     setPreviousValue(null)
     setOperation(null)
     setWaitingForOperand(false)
@@ -65,6 +76,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
       setPreviousValue(newValue)
     }
 
+    setCalculation(calculation + nextOperation)
     setWaitingForOperand(true)
     setOperation(nextOperation)
   }
@@ -90,6 +102,7 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
     if (previousValue !== null && operation) {
       const newValue = calculate(previousValue, inputValue, operation)
       setDisplay(String(newValue))
+      setCalculation(calculation + '=' + newValue)
       setPreviousValue(null)
       setOperation(null)
       setWaitingForOperand(true)
@@ -126,6 +139,14 @@ const CalculatorComponent = ({ isOpen, onClose, onResult }) => {
             background: 'linear-gradient(145deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2))'
           }}
         >
+          {/* Calculation Process */}
+          {calculation && (
+            <div className="text-right text-gray-300 text-xs sm:text-sm mb-1 overflow-hidden">
+              {calculation}
+            </div>
+          )}
+          
+          {/* Current Display */}
           <div 
             className="text-right text-white font-light overflow-hidden break-all"
             style={{ 

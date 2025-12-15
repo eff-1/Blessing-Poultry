@@ -60,7 +60,20 @@ export const ComprehensiveFinancialManager = () => {
   const [showPasscodeModal, setShowPasscodeModal] = useState(false)
   const [passcode, setPasscode] = useState('')
   const [isAuthorized, setIsAuthorized] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [monthlyBudget, setMonthlyBudget] = useState(null)
+  const [showBudgetModal, setShowBudgetModal] = useState(false)
+  const [budgetCategories, setBudgetCategories] = useState([])
+  const [budgetProgress, setBudgetProgress] = useState({ spent: 0, remaining: 0, percentage: 0 })
   const [showOverview, setShowOverview] = useState(false) // Collapsed by default on mobile
+  const [newBudget, setNewBudget] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    budget_amount: '',
+    notes: ''
+  })
+  const [creatingBudget, setCreatingBudget] = useState(false)
 
   // Multi-record forms
   const [expenseRecords, setExpenseRecords] = useState([{
@@ -101,8 +114,144 @@ export const ComprehensiveFinancialManager = () => {
   useEffect(() => {
     if (isAuthorized) {
       fetchFinancialData()
+      fetchBudgetData()
     }
   }, [selectedPeriod, isAuthorized])
+
+  const fetchBudgetData = async () => {
+    try {
+      const currentDate = new Date()
+      const month = currentDate.getMonth() + 1
+      const year = currentDate.getFullYear()
+
+      // Get monthly budget
+      const { data: budget } = await supabase
+        .from('monthly_budgets')
+        .select('*')
+        .eq('month', month)
+        .eq('year', year)
+        .single()
+
+      if (budget) {
+        setMonthlyBudget(budget)
+        
+        // Get budget categories
+        const { data: categories } = await supabase
+          .from('budget_categories')
+          .select('*')
+          .eq('budget_id', budget.id)
+
+        setBudgetCategories(categories || [])
+        
+        // Calculate budget progress
+        const totalSpent = categories?.reduce((sum, cat) => sum + parseFloat(cat.spent_amount || 0), 0) || 0
+        const budgetAmount = parseFloat(budget.budget_amount || 0)
+        const remaining = budgetAmount - totalSpent
+        const percentage = budgetAmount > 0 ? (totalSpent / budgetAmount) * 100 : 0
+
+        setBudgetProgress({
+          spent: totalSpent,
+          remaining: remaining,
+          percentage: percentage
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error)
+    }
+  }
+
+  const handleCreateBudget = async (e) => {
+    e.preventDefault()
+    setCreatingBudget(true)
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      const budgetData = {
+        month: newBudget.month,
+        year: newBudget.year,
+        budget_amount: parseFloat(newBudget.budget_amount.replace(/,/g, '')),
+        expense_limit: parseFloat(newBudget.budget_amount.replace(/,/g, '')) * 0.8, // 80% of budget
+        income_target: parseFloat(newBudget.budget_amount.replace(/,/g, '')) * 1.2, // 120% of budget
+        notes: newBudget.notes,
+        created_by: user?.id
+      }
+
+      const { data, error } = await supabase
+        .from('monthly_budgets')
+        .insert([budgetData])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Create default budget categories
+      const defaultCategories = [
+        { category_name: 'Feed', allocated_amount: budgetData.budget_amount * 0.4, category_type: 'expense' },
+        { category_name: 'Medication', allocated_amount: budgetData.budget_amount * 0.15, category_type: 'expense' },
+        { category_name: 'Equipment', allocated_amount: budgetData.budget_amount * 0.1, category_type: 'expense' },
+        { category_name: 'Labor', allocated_amount: budgetData.budget_amount * 0.25, category_type: 'expense' },
+        { category_name: 'Utilities', allocated_amount: budgetData.budget_amount * 0.1, category_type: 'expense' }
+      ]
+
+      const categoriesWithBudgetId = defaultCategories.map(cat => ({
+        ...cat,
+        budget_id: data.id
+      }))
+
+      await supabase
+        .from('budget_categories')
+        .insert(categoriesWithBudgetId)
+
+      showSuccess('Budget created successfully!')
+      setShowBudgetModal(false)
+      setNewBudget({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        budget_amount: '',
+        notes: ''
+      })
+      fetchBudgetData()
+    } catch (error) {
+      console.error('Error creating budget:', error)
+      if (error.message.includes('relation "monthly_budgets" does not exist')) {
+        showError('Budget tables not found. Please run budget-system.sql in Supabase first!')
+      } else {
+        showError('Failed to create budget: ' + error.message)
+      }
+    } finally {
+      setCreatingBudget(false)
+    }
+  }
+
+  const handleDeleteBudget = async () => {
+    if (!monthlyBudget) return
+    
+    try {
+      // Delete budget categories first
+      await supabase
+        .from('budget_categories')
+        .delete()
+        .eq('budget_id', monthlyBudget.id)
+
+      // Delete budget
+      const { error } = await supabase
+        .from('monthly_budgets')
+        .delete()
+        .eq('id', monthlyBudget.id)
+
+      if (error) throw error
+
+      showSuccess('Budget deleted successfully!')
+      setMonthlyBudget(null)
+      setBudgetCategories([])
+      setBudgetProgress({ spent: 0, remaining: 0, percentage: 0 })
+      setShowBudgetModal(false)
+    } catch (error) {
+      console.error('Error deleting budget:', error)
+      showError('Failed to delete budget: ' + error.message)
+    }
+  }
 
   const checkSuperAdminAccess = async () => {
     try {
@@ -632,6 +781,37 @@ export const ComprehensiveFinancialManager = () => {
     }
   }
 
+  const handleEditRecord = (type, record) => {
+    setEditingRecord({ ...record, type })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateRecord = async (updatedRecord) => {
+    try {
+      const table = updatedRecord.type === 'expense' ? 'expenses' : 'income'
+      const { type, ...recordData } = updatedRecord
+      
+      const { error } = await supabase
+        .from(table)
+        .update(recordData)
+        .eq('id', recordData.id)
+
+      if (error) throw error
+
+      showSuccess(`${type} record updated successfully`)
+      setShowEditModal(false)
+      setEditingRecord(null)
+      fetchFinancialData()
+    } catch (error) {
+      console.error('Update error:', error)
+      showError('Failed to update record')
+    }
+  }
+
+
+
+
+
   const handleDeleteRecord = async () => {
     if (!deleteConfirm) return
     
@@ -826,7 +1006,7 @@ export const ComprehensiveFinancialManager = () => {
               <span className="text-xs text-green-700">Pending</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold text-yellow-600">
-              {expenses.filter(e => e.status === 'pending').length}
+              {[...expenses, ...income].filter(item => item.status === 'pending').length}
             </div>
           </div>
           
@@ -836,9 +1016,11 @@ export const ComprehensiveFinancialManager = () => {
               <span className="text-xs text-green-700">Flagged</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold text-red-600">
-              {expenses.filter(e => e.status === 'flagged').length + income.filter(i => i.status === 'flagged').length}
+              {[...expenses, ...income].filter(item => item.status === 'flagged').length}
             </div>
           </div>
+          
+
         </div>
         </div>
       </div>
@@ -863,6 +1045,56 @@ export const ComprehensiveFinancialManager = () => {
           ))}
         </div>
       )}
+
+      {/* Budget Management Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 shadow-sm"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg flex items-center justify-center">
+              <FiDollarSign className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900">Monthly Budget</h3>
+              {monthlyBudget ? (
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="text-sm text-blue-700">
+                    ₦{budgetProgress.spent.toLocaleString()} / ₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-blue-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          budgetProgress.percentage > 80 ? 'bg-red-500' : 
+                          budgetProgress.percentage > 60 ? 'bg-yellow-500' : 'bg-gradient-to-r from-blue-500 to-green-500'
+                        }`}
+                        style={{ width: `${Math.min(budgetProgress.percentage, 100)}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      budgetProgress.percentage > 80 ? 'text-red-600' : 
+                      budgetProgress.percentage > 60 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {budgetProgress.percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-blue-600 mt-1">No budget set for this month</p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setShowBudgetModal(true)}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all text-sm font-medium"
+          >
+            {monthlyBudget ? 'Manage' : 'Set Budget'}
+          </button>
+        </div>
+      </motion.div>
 
       {/* Mobile-Optimized Controls */}
       <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-6 shadow-sm border border-gray-200">
@@ -1015,16 +1247,26 @@ export const ComprehensiveFinancialManager = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">{new Date(expense.date).toLocaleDateString()}</span>
-                  <button
-                    onClick={() => setDeleteConfirm({
-                      type: 'expense',
-                      id: expense.id,
-                      description: expense.description
-                    })}
-                    className="text-red-600 hover:text-red-900 p-1"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditRecord('expense', expense)}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edit"
+                    >
+                      <FiEdit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({
+                        type: 'expense',
+                        id: expense.id,
+                        description: expense.description
+                      })}
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1047,16 +1289,26 @@ export const ComprehensiveFinancialManager = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">{new Date(inc.date).toLocaleDateString()}</span>
-                  <button
-                    onClick={() => setDeleteConfirm({
-                      type: 'income',
-                      id: inc.id,
-                      description: inc.description
-                    })}
-                    className="text-red-600 hover:text-red-900 p-1"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditRecord('income', inc)}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edit"
+                    >
+                      <FiEdit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({
+                        type: 'income',
+                        id: inc.id,
+                        description: inc.description
+                      })}
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1095,16 +1347,26 @@ export const ComprehensiveFinancialManager = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setDeleteConfirm({
-                        type: 'expense',
-                        id: expense.id,
-                        description: expense.description
-                      })}
-                      className="text-red-600 hover:text-red-900 p-1"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditRecord('expense', expense)}
+                        className="text-blue-600 hover:text-blue-900 p-1"
+                        title="Edit"
+                      >
+                        <FiEdit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({
+                          type: 'expense',
+                          id: expense.id,
+                          description: expense.description
+                        })}
+                        className="text-red-600 hover:text-red-900 p-1"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1127,16 +1389,26 @@ export const ComprehensiveFinancialManager = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setDeleteConfirm({
-                        type: 'income',
-                        id: inc.id,
-                        description: inc.description
-                      })}
-                      className="text-red-600 hover:text-red-900 p-1"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditRecord('income', inc)}
+                        className="text-blue-600 hover:text-blue-900 p-1"
+                        title="Edit"
+                      >
+                        <FiEdit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({
+                          type: 'income',
+                          id: inc.id,
+                          description: inc.description
+                        })}
+                        className="text-red-600 hover:text-red-900 p-1"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1400,6 +1672,223 @@ export const ComprehensiveFinancialManager = () => {
         confirmText="DELETE FINANCIAL RECORD"
         cancelText="Keep Record Safe"
       />
+
+      {/* Edit Record Modal */}
+      {showEditModal && editingRecord && (
+        <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Record">
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            handleUpdateRecord(editingRecord)
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <input
+                type="text"
+                value={editingRecord.description}
+                onChange={(e) => setEditingRecord({...editingRecord, description: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+              <SmartNumberInput
+                value={editingRecord.amount}
+                onChange={(value) => setEditingRecord({...editingRecord, amount: value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={editingRecord.status}
+                onChange={(e) => setEditingRecord({...editingRecord, status: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              >
+                <option value="cleared">Cleared</option>
+                <option value="pending">Pending</option>
+                <option value="flagged">Flagged</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <input
+                type="date"
+                value={editingRecord.date}
+                onChange={(e) => setEditingRecord({...editingRecord, date: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                required
+              />
+            </div>
+            
+            <div className="flex gap-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+              >
+                Update Record
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Budget Management Modal */}
+      <Modal isOpen={showBudgetModal} onClose={() => setShowBudgetModal(false)} title="Budget Management">
+        <div className="space-y-6">
+          {/* Current Budget Overview */}
+          {monthlyBudget && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Current Month Budget</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Budget Amount</p>
+                  <p className="text-lg font-bold text-green-600">₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Spent</p>
+                  <p className="text-lg font-bold text-red-600">₦{budgetProgress.spent.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Remaining</p>
+                  <p className="text-lg font-bold text-blue-600">₦{budgetProgress.remaining.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Usage</p>
+                  <p className={`text-lg font-bold ${budgetProgress.percentage > 80 ? 'text-red-600' : budgetProgress.percentage > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {budgetProgress.percentage.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      budgetProgress.percentage > 80 ? 'bg-red-500' : 
+                      budgetProgress.percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${Math.min(budgetProgress.percentage, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Budget Categories */}
+          {budgetCategories.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Budget Categories</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {budgetCategories.map((category) => (
+                  <div key={category.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900">{category.category_name}</p>
+                      <p className="text-sm text-gray-600">{category.category_type}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">₦{parseFloat(category.spent_amount || 0).toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">of ₦{parseFloat(category.allocated_amount).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Create New Budget Form */}
+          {!monthlyBudget && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Create Monthly Budget</h3>
+              <form onSubmit={handleCreateBudget} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <CustomDropdown
+                      label="Month"
+                      options={Array.from({length: 12}, (_, i) => ({
+                        value: i + 1,
+                        label: new Date(2024, i).toLocaleString('default', { month: 'long' })
+                      }))}
+                      value={newBudget.month}
+                      onChange={(value) => setNewBudget({...newBudget, month: parseInt(value)})}
+                      placeholder="Select Month"
+                    />
+                  </div>
+                  <div>
+                    <CustomDropdown
+                      label="Year"
+                      options={Array.from({length: 5}, (_, i) => ({
+                        value: 2024 + i,
+                        label: (2024 + i).toString()
+                      }))}
+                      value={newBudget.year}
+                      onChange={(value) => setNewBudget({...newBudget, year: parseInt(value)})}
+                      placeholder="Select Year"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Budget Amount (₦)</label>
+                    <SmartNumberInput
+                      value={newBudget.budget_amount}
+                      onChange={(value) => setNewBudget({...newBudget, budget_amount: value})}
+                      placeholder="100,000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    value={newBudget.notes}
+                    onChange={(e) => setNewBudget({...newBudget, notes: e.target.value})}
+                    placeholder="Budget notes or goals..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={creatingBudget}
+                  className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all disabled:opacity-50"
+                >
+                  {creatingBudget ? 'Creating Budget...' : 'Create Budget'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="flex gap-3">
+            {monthlyBudget && (
+              <button
+                onClick={handleDeleteBudget}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Budget
+              </button>
+            )}
+            <button
+              onClick={() => setShowBudgetModal(false)}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

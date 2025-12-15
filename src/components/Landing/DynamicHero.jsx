@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
-import { ChristmasHero } from './ChristmasHero';
+import ChristmasHero from './ChristmasHero';
 import { RamadanHero } from './RamadanHero';
 import EasterHero from './EasterHero';
 import NormalSeasonHero from './NormalSeasonHero';

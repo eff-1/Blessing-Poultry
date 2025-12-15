@@ -1,0 +1,179 @@
+-- COMPLETE SETUP SQL - Run this in Supabase
+-- This includes budget system + hero fixes + status columns
+
+-- ========================================
+-- 1. BUDGET SYSTEM SETUP
+-- ========================================
+
+-- Create monthly_budgets table
+CREATE TABLE IF NOT EXISTS monthly_budgets (
+  id SERIAL PRIMARY KEY,
+  month INTEGER NOT NULL, -- 1-12
+  year INTEGER NOT NULL,
+  budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  expense_limit DECIMAL(12,2) NOT NULL DEFAULT 0,
+  income_target DECIMAL(12,2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(month, year)
+);
+
+-- Enable RLS for monthly_budgets
+ALTER TABLE monthly_budgets ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policy for monthly_budgets
+CREATE POLICY "authenticated_access_budgets" ON monthly_budgets
+  FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- Grant permissions for monthly_budgets
+GRANT ALL ON monthly_budgets TO authenticated;
+
+-- Create budget_categories table
+CREATE TABLE IF NOT EXISTS budget_categories (
+  id SERIAL PRIMARY KEY,
+  budget_id INTEGER REFERENCES monthly_budgets(id) ON DELETE CASCADE,
+  category_name VARCHAR(100) NOT NULL,
+  allocated_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  spent_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  category_type VARCHAR(20) NOT NULL DEFAULT 'expense', -- 'expense' or 'income'
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Enable RLS for budget_categories
+ALTER TABLE budget_categories ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policy for budget_categories
+CREATE POLICY "authenticated_access_budget_categories" ON budget_categories
+  FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- Grant permissions for budget_categories
+GRANT ALL ON budget_categories TO authenticated;
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_monthly_budgets_month_year ON monthly_budgets(month, year);
+CREATE INDEX IF NOT EXISTS idx_budget_categories_budget_id ON budget_categories(budget_id);
+CREATE INDEX IF NOT EXISTS idx_budget_categories_type ON budget_categories(category_type);
+
+-- ========================================
+-- 2. HERO SYSTEM FIXES
+-- ========================================
+
+-- Update Christmas hero with 20% OFF
+UPDATE heroes 
+SET 
+  title = 'CHRISTMAS',
+  subtitle = 'MEGA SALE', 
+  description = 'Get amazing deals on fresh poultry products this Christmas season',
+  discount_text = '20% OFF',
+  cta_primary = 'Shop Now',
+  cta_secondary = 'Flash Deals',
+  updated_at = NOW()
+WHERE is_active = true;
+
+-- If no active hero exists, create Christmas hero
+INSERT INTO heroes (
+  name, title, subtitle, description, discount_text, 
+  cta_primary, cta_secondary, is_active, created_at, updated_at
+)
+SELECT 
+  'christmas', 'CHRISTMAS', 'MEGA SALE', 
+  'Get amazing deals on fresh poultry products this Christmas season',
+  '20% OFF', 'Shop Now', 'Flash Deals', true, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM heroes WHERE is_active = true);
+
+-- ========================================
+-- 3. FINANCIAL SYSTEM FIXES
+-- ========================================
+
+-- Ensure expenses and income tables have status column
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'cleared';
+ALTER TABLE income ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'cleared';
+
+-- Update existing records to have proper status
+UPDATE expenses SET status = 'cleared' WHERE status IS NULL;
+UPDATE income SET status = 'cleared' WHERE status IS NULL;
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_expenses_status ON expenses(status);
+CREATE INDEX IF NOT EXISTS idx_income_status ON income(status);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+CREATE INDEX IF NOT EXISTS idx_income_date ON income(date);
+
+-- ========================================
+-- 4. BUDGET AUTO-UPDATE FUNCTIONS
+-- ========================================
+
+-- Create function to update spent amounts automatically
+CREATE OR REPLACE FUNCTION update_budget_spent_amounts()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Update expense categories
+  UPDATE budget_categories bc
+  SET 
+    spent_amount = (
+      SELECT COALESCE(SUM(e.amount), 0)
+      FROM expenses e
+      WHERE e.category = bc.category_name
+      AND EXTRACT(MONTH FROM e.date) = (
+        SELECT mb.month FROM monthly_budgets mb WHERE mb.id = bc.budget_id
+      )
+      AND EXTRACT(YEAR FROM e.date) = (
+        SELECT mb.year FROM monthly_budgets mb WHERE mb.id = bc.budget_id
+      )
+    ),
+    updated_at = NOW()
+  WHERE bc.category_type = 'expense';
+
+  -- Update income categories
+  UPDATE budget_categories bc
+  SET 
+    spent_amount = (
+      SELECT COALESCE(SUM(i.amount), 0)
+      FROM income i
+      WHERE i.source = bc.category_name
+      AND EXTRACT(MONTH FROM i.date) = (
+        SELECT mb.month FROM monthly_budgets mb WHERE mb.id = bc.budget_id
+      )
+      AND EXTRACT(YEAR FROM i.date) = (
+        SELECT mb.year FROM monthly_budgets mb WHERE mb.id = bc.budget_id
+      )
+    ),
+    updated_at = NOW()
+  WHERE bc.category_type = 'income';
+
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create triggers to auto-update spent amounts
+DROP TRIGGER IF EXISTS trigger_update_budget_on_expense ON expenses;
+CREATE TRIGGER trigger_update_budget_on_expense
+  AFTER INSERT OR UPDATE OR DELETE ON expenses
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION update_budget_spent_amounts();
+
+DROP TRIGGER IF EXISTS trigger_update_budget_on_income ON income;
+CREATE TRIGGER trigger_update_budget_on_income
+  AFTER INSERT OR UPDATE OR DELETE ON income
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION update_budget_spent_amounts();
+
+-- ========================================
+-- 5. VERIFICATION
+-- ========================================
+
+-- Verify setup
+SELECT 'COMPLETE SETUP SUCCESSFUL!' as result;
+SELECT 'Budget system created' as budget_status;
+SELECT 'Hero system updated' as hero_status;
+SELECT 'Financial system enhanced' as financial_status;
+
+-- Show current active hero
+SELECT * FROM heroes WHERE is_active = true;
+
+-- Show budget tables structure
+SELECT 'monthly_budgets table ready' as budget_table_status;
+SELECT 'budget_categories table ready' as categories_table_status;

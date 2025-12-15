@@ -28,15 +28,15 @@ export const Signup = () => {
   const checkAdminLimit = async () => {
     try {
       // Check how many admins exist in admin_roles table
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('admin_roles')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
 
       if (error) {
         console.error('Error checking admin count:', error)
         setAdminCount(0)
       } else {
-        setAdminCount(data || 0)
+        setAdminCount(count || 0)
       }
     } catch (error) {
       console.error('Error checking admin limit:', error)

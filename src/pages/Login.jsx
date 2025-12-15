@@ -10,9 +10,7 @@ export const Login = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
-  const [resetLoading, setResetLoading] = useState(false)
+
   
   const navigate = useNavigate()
   const { showSuccess, showError } = useNotification()
@@ -64,59 +62,7 @@ export const Login = () => {
     }
   }
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault()
-    setResetLoading(true)
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `https://blessing-poultry.vercel.app/reset-password`,
-      })
-
-      if (error) throw error
-
-      showSuccess('Password reset email sent! Check your inbox.', {
-        title: 'Reset Email Sent'
-      })
-      setShowForgotPassword(false)
-      setResetEmail('')
-    } catch (error) {
-      console.error('Reset password error:', error)
-      showError(error.message || 'Failed to send reset email.', {
-        title: 'Reset Failed'
-      })
-    } finally {
-      setResetLoading(false)
-    }
-  }
-
-  const handleResendVerification = async () => {
-    setResetLoading(true)
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: resetEmail,
-        options: {
-          emailRedirectTo: 'https://blessing-poultry.vercel.app/auth/confirm'
-        }
-      })
-
-      if (error) throw error
-
-      showSuccess('Verification email sent! Check your inbox and click the link to verify your account.', {
-        title: 'Verification Email Sent'
-      })
-      setShowForgotPassword(false)
-      setResetEmail('')
-    } catch (error) {
-      console.error('Resend verification error:', error)
-      showError(error.message || 'Failed to resend verification email.', {
-        title: 'Resend Failed'
-      })
-    } finally {
-      setResetLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
@@ -181,9 +127,7 @@ export const Login = () => {
             <p className="text-gray-600">Welcome back to Blessing Poultries</p>
           </div>
 
-          {!showForgotPassword ? (
-            /* Login Form */
-            <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -229,13 +173,12 @@ export const Login = () => {
 
               {/* Forgot Password Link */}
               <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(true)}
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-green-600 hover:text-green-700 transition-colors font-medium"
                 >
                   Forgot Password?
-                </button>
+                </Link>
               </div>
 
               {/* Login Button */}
@@ -256,63 +199,6 @@ export const Login = () => {
                 )}
               </motion.button>
             </form>
-          ) : (
-            /* Forgot Password Form */
-            <form onSubmit={handleForgotPassword} className="space-y-6">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Reset Password</h2>
-                <p className="text-gray-600 text-sm">
-                  Enter your email address and we'll send you a reset link
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="admin@blessingpoultries.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(false)
-                    setResetEmail('')
-                  }}
-                  className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Back to Login
-                </button>
-                <motion.button
-                  type="submit"
-                  disabled={resetLoading}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-                  whileHover={{ scale: resetLoading ? 1 : 1.02 }}
-                  whileTap={{ scale: resetLoading ? 1 : 0.98 }}
-                >
-                  {resetLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sending...
-                    </div>
-                  ) : (
-                    'Send Reset Link'
-                  )}
-                </motion.button>
-              </div>
-            </form>
-          )}
 
           {/* Sign Up Link */}
           <div className="mt-8 text-center">
