@@ -32,12 +32,15 @@ export const ProductCard = ({ product }) => {
       ? ' - Available in stock' 
       : ' - Currently out of stock'
     
+    const productUrl = `https://blessing-poultry.vercel.app/#products?search=${encodeURIComponent(product.name)}`
+    
     const message = encodeURIComponent(
       `BLESSING POULTRIES - ORDER INQUIRY\n\n` +
       `Product: ${product.name}\n` +
       `Price: ${formatPrice(product.price)}\n` +
       `Category: ${product.category}${stockInfo}\n` +
       `Description: ${product.description || 'Premium quality product'}\n\n` +
+      `View This Product: ${productUrl}\n\n` +
       `Hello, I am interested in ordering this product. Please provide information about availability, delivery options, and payment methods.\n\n` +
       `Thank you for your time.`
     )
@@ -58,6 +61,8 @@ export const ProductCard = ({ product }) => {
       ? ' - Available in stock' 
       : ' - Currently out of stock'
     
+    const productUrl = `https://blessing-poultry.vercel.app/#products?search=${encodeURIComponent(product.name)}`
+    
     const message = encodeURIComponent(
       `BLESSING POULTRIES - PRODUCT INQUIRY\n\n` +
       `Product: ${product.name}\n` +
@@ -65,6 +70,7 @@ export const ProductCard = ({ product }) => {
       `Category: ${product.category}${stockInfo}\n` +
       `Description: ${product.description || 'Premium quality product'}\n\n` +
       `Product Image: ${product.image_url}\n\n` +
+      `View This Product: ${productUrl}\n\n` +
       `Hello, I am interested in this specific product. Please provide more details about availability, delivery options, and payment methods.\n\n` +
       `Thank you for your time.`
     )
