@@ -16,9 +16,23 @@ export const Contact = () => {
     setContact(data)
   }
 
+  const getWhatsAppLink = () => {
+    const message = encodeURIComponent(
+      `BLESSING POULTRIES - GENERAL INQUIRY\n\n` +
+      `Hello, I would like to inquire about your products and services.\n\n` +
+      `Please provide information about:\n` +
+      `- Available products\n` +
+      `- Pricing\n` +
+      `- Delivery options\n` +
+      `- Payment methods\n\n` +
+      `Thank you for your time.`
+    )
+    return `https://wa.me/${contact?.whatsapp}?text=${message}`
+  }
+
   const contactItems = [
     { icon: FaPhone, label: 'Phone', value: contact?.phone, href: `tel:${contact?.phone}` },
-    { icon: FaWhatsapp, label: 'WhatsApp', value: contact?.whatsapp, href: `https://wa.me/${contact?.whatsapp}` },
+    { icon: FaWhatsapp, label: 'WhatsApp', value: contact?.whatsapp, href: getWhatsAppLink() },
     { icon: FaEnvelope, label: 'Email', value: contact?.email, href: `mailto:${contact?.email}` },
     { icon: FaMapMarkerAlt, label: 'Address', value: contact?.address },
   ]

@@ -11,7 +11,8 @@ import {
   FiBarChart,
   FiUsers,
   FiCamera,
-  FiDollarSign
+  FiDollarSign,
+  FiBell
 } from 'react-icons/fi'
 import { GiChicken } from 'react-icons/gi'
 
@@ -26,6 +27,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
     { id: 'gallery', label: 'Gallery', icon: FiCamera },
     { id: 'customers', label: 'Testimonials', icon: FiUsers },
     { id: 'financial', label: 'Financial Manager', icon: FiDollarSign },
+    { id: 'notifications', label: 'Notifications', icon: FiBell },
     { id: 'analytics', label: 'Analytics', icon: FiBarChart },
     { id: 'settings', label: 'Settings', icon: FiSettings }
   ]
@@ -50,7 +52,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
       </div>
       
       {/* Navigation */}
-      <nav className={`flex-1 ${isMobile ? 'p-4 space-y-2' : 'p-4 lg:p-6 space-y-1'}`}>
+      <nav className={`flex-1 ${isMobile ? 'p-4 space-y-2' : 'p-4 lg:p-6 space-y-1'} overflow-y-auto`}>
         {menuItems.map((item) => {
           const Icon = item.icon
           return (
@@ -60,16 +62,23 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
                 setActiveTab(item.id)
                 setIsMobileMenuOpen(false)
               }}
-              className={`w-full flex items-center ${isMobile ? 'gap-3 px-4 py-3' : 'gap-3 px-3 py-2.5'} rounded-xl text-left transition-all duration-200 ${
+              className={`w-full flex items-center ${isMobile ? 'gap-3 px-3 py-3' : 'gap-3 px-3 py-2.5'} rounded-xl text-left transition-all duration-200 ${
                 activeTab === item.id
                   ? 'bg-green-50 text-green-700 border border-green-200 shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-              whileHover={{ scale: 1.02 }}
+              } ${isMobile ? 'max-w-full overflow-hidden' : ''}`}
+              whileHover={{ scale: isMobile ? 1 : 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Icon className={`${isMobile ? 'w-5 h-5' : 'w-5 h-5'} ${activeTab === item.id ? 'text-green-600' : 'text-gray-400'}`} />
-              <span className={`font-medium ${isMobile ? 'text-sm' : 'text-sm'}`}>
+              <div className="relative flex-shrink-0">
+                <Icon className={`w-5 h-5 ${activeTab === item.id ? 'text-green-600' : 'text-gray-400'}`} />
+                {item.badge && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <span className={`font-medium text-sm truncate ${isMobile ? 'flex-1 min-w-0' : ''}`}>
                 {item.label}
               </span>
             </motion.button>
@@ -131,13 +140,15 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
             
             {/* Mobile Sidebar */}
             <motion.aside
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl z-50 flex flex-col"
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl z-50 flex flex-col overflow-hidden"
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              <SidebarContent isMobile={true} />
+              <div className="w-full h-full overflow-y-auto">
+                <SidebarContent isMobile={true} />
+              </div>
             </motion.aside>
           </>
         )}

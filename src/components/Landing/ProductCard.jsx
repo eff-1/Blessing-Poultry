@@ -16,6 +16,8 @@ export const ProductCard = ({ product }) => {
     setWhatsapp(data?.whatsapp || '2348012345678')
   }
 
+
+
   const handleWhatsAppOrder = () => {
     // Check if product is out of stock
     if (product.stock_status === 'out_of_stock' || !product.in_stock) {
@@ -25,20 +27,46 @@ export const ProductCard = ({ product }) => {
     }
 
     const stockInfo = product.stock_status === 'few_left' 
-      ? `\nStock: Only ${product.stock_quantity || 'few'} left!` 
+      ? ` - Only ${product.stock_quantity || 'few'} left in stock` 
       : product.stock_status === 'in_stock' 
-      ? '\nStock: Available' 
-      : '\nStock: Out of stock'
+      ? ' - Available in stock' 
+      : ' - Currently out of stock'
     
     const message = encodeURIComponent(
-      `🐔 *BLESSING POULTRIES ORDER INQUIRY*\n\n` +
-      `📦 *Product:* ${product.name}\n` +
-      `💰 *Price:* ${formatPrice(product.price)}\n` +
-      `📂 *Category:* ${product.category}${stockInfo}\n` +
-      `📝 *Description:* ${product.description || 'Premium quality product'}\n\n` +
-      `🔗 *Product Image:* ${product.image_url}\n\n` +
-      `Hi! I'm interested in ordering this product. Please provide more details about availability, delivery, and payment options.\n\n` +
-      `Thank you! 🙏`
+      `BLESSING POULTRIES - ORDER INQUIRY\n\n` +
+      `Product: ${product.name}\n` +
+      `Price: ${formatPrice(product.price)}\n` +
+      `Category: ${product.category}${stockInfo}\n` +
+      `Description: ${product.description || 'Premium quality product'}\n\n` +
+      `Hello, I am interested in ordering this product. Please provide information about availability, delivery options, and payment methods.\n\n` +
+      `Thank you for your time.`
+    )
+    window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank')
+  }
+
+  const handleImageClick = () => {
+    // Check if product is out of stock
+    if (product.stock_status === 'out_of_stock' || !product.in_stock) {
+      // Show popup message for out of stock
+      alert(`Sorry, "${product.name}" is currently out of stock. Please check back later or contact us for availability updates.`)
+      return
+    }
+
+    const stockInfo = product.stock_status === 'few_left' 
+      ? ` - Only ${product.stock_quantity || 'few'} left in stock` 
+      : product.stock_status === 'in_stock' 
+      ? ' - Available in stock' 
+      : ' - Currently out of stock'
+    
+    const message = encodeURIComponent(
+      `BLESSING POULTRIES - PRODUCT INQUIRY\n\n` +
+      `Product: ${product.name}\n` +
+      `Price: ${formatPrice(product.price)}\n` +
+      `Category: ${product.category}${stockInfo}\n` +
+      `Description: ${product.description || 'Premium quality product'}\n\n` +
+      `Product Image: ${product.image_url}\n\n` +
+      `Hello, I am interested in this specific product. Please provide more details about availability, delivery options, and payment methods.\n\n` +
+      `Thank you for your time.`
     )
     window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank')
   }
@@ -51,8 +79,22 @@ export const ProductCard = ({ product }) => {
       viewport={{ once: true }}
       whileHover={{ y: -8 }}
     >
-      <div className="product-image-wrapper">
-        <img src={product.image_url} alt={product.name} className="product-image" />
+      <div className="product-image-wrapper relative group">
+        <img 
+          src={product.image_url} 
+          alt={product.name} 
+          className="product-image cursor-pointer hover:opacity-90 transition-opacity" 
+          onClick={handleImageClick}
+          title="Click to inquire about this product via WhatsApp"
+        />
+        
+        {/* WhatsApp Click Indicator */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="bg-green-600 text-white px-3 py-2 rounded-full flex items-center gap-2 transform scale-90 group-hover:scale-100 transition-transform">
+            <FaWhatsapp size={16} />
+            <span className="text-sm font-medium">View on WhatsApp</span>
+          </div>
+        </div>
         <span className={`product-badge ${
           product.stock_status === 'in_stock' ? 'badge-in-stock' : 
           product.stock_status === 'few_left' ? 'badge-few-left' : 
@@ -100,6 +142,8 @@ export const ProductCard = ({ product }) => {
           )}
         </div>
       </div>
+
+
     </motion.div>
   )
 }

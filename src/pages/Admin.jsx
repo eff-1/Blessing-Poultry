@@ -11,7 +11,8 @@ import { ManageContact } from '../components/Admin/ManageContact'
 import { ManageAbout } from '../components/Admin/ManageAbout'
 import { SiteAnalytics } from '../components/Admin/SiteAnalytics'
 import { AdminSettings } from '../components/Admin/AdminSettings'
-import { FinancialManager } from '../components/Admin/FinancialManager'
+import { ComprehensiveFinancialManager } from '../components/Admin/ComprehensiveFinancialManager'
+import { RealNotifications } from '../components/Admin/RealNotifications'
 import { supabase } from '../lib/supabaseClient'
 
 export const Admin = () => {
@@ -59,7 +60,7 @@ export const Admin = () => {
         <AdminNavbar user={user} />
         
         {/* Main content - scrollable with proper spacing */}
-        <main className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pt-16">
+        <main className="flex-1 overflow-y-auto pt-16">
           {/* Content with padding */}
           <div className="p-4 md:p-6">
             <motion.div
@@ -101,8 +102,12 @@ export const Admin = () => {
                 </div>
               )}
               {activeTab === 'financial' && (
+                <ComprehensiveFinancialManager />
+              )}
+              {activeTab === 'notifications' && (
                 <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm">
-                  <FinancialManager />
+                  <h2 className="text-xl md:text-2xl font-bold mb-4">System Notifications</h2>
+                  <RealNotifications />
                 </div>
               )}
               {activeTab === 'settings' && (

@@ -39,22 +39,22 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-lg max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">{title}</h3>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <IoClose className="w-5 h-5 text-gray-500" />
+                <IoClose className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
               </button>
             </div>
             
             {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-100px)] sm:max-h-[calc(90vh-120px)]">
               {children}
             </div>
           </motion.div>

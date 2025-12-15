@@ -1,7 +1,52 @@
+import { useState, useEffect } from 'react'
 import { Container, Row, Col } from 'react-bootstrap'
 import { GiChicken } from 'react-icons/gi'
+import { supabase } from '../../lib/supabaseClient'
 
 export const Footer = () => {
+  const [contactInfo, setContactInfo] = useState({
+    phone: 'Loading...',
+    email: 'Loading...',
+    address: 'Loading...'
+  })
+
+  useEffect(() => {
+    fetchContactInfo()
+  }, [])
+
+  const fetchContactInfo = async () => {
+    try {
+      // Get contact info from database
+      const { data: contact } = await supabase
+        .from('contact_info')
+        .select('*')
+        .single()
+
+      if (contact) {
+        setContactInfo({
+          phone: contact.phone || '+234 XXX XXX XXXX',
+          email: contact.email || 'info@blessingpoultry.com',
+          address: contact.address || 'Lagos, Nigeria'
+        })
+      } else {
+        // Fallback to default values
+        setContactInfo({
+          phone: '+234 XXX XXX XXXX',
+          email: 'info@blessingpoultry.com',
+          address: 'Lagos, Nigeria'
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching contact info:', error)
+      // Use fallback values
+      setContactInfo({
+        phone: '+234 XXX XXX XXXX',
+        email: 'info@blessingpoultry.com',
+        address: 'Lagos, Nigeria'
+      })
+    }
+  }
+
   return (
     <footer className="footer">
       <Container>
@@ -32,9 +77,9 @@ export const Footer = () => {
           </Col>
           <Col lg={4} className="mb-4">
             <h5 style={{ marginBottom: '16px' }}>Contact</h5>
-            <p>Phone: [Your Phone]</p>
-            <p>Email: [Your Email]</p>
-            <p>Address: [Your Address]</p>
+            <p>Phone: {contactInfo.phone}</p>
+            <p>Email: {contactInfo.email}</p>
+            <p>Address: {contactInfo.address}</p>
           </Col>
         </Row>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', marginTop: '20px', textAlign: 'center' }}>
