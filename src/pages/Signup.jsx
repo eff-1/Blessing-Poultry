@@ -3,23 +3,15 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useNotification } from '../components/Shared/NotificationSystem'
-import { FiMail, FiLock, FiEye, FiEyeOff, FiFeather, FiArrowLeft, FiUser, FiAlertCircle } from 'react-icons/fi'
+import { FiLock, FiFeather, FiArrowLeft, FiAlertCircle } from 'react-icons/fi'
 
 export const Signup = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
+
   const [adminCount, setAdminCount] = useState(0)
   const [checkingLimit, setCheckingLimit] = useState(true)
   
   const navigate = useNavigate()
-  const { showSuccess, showError, showWarning } = useNotification()
+  const { showError } = useNotification()
 
   useEffect(() => {
     checkAdminLimit()
@@ -27,20 +19,33 @@ export const Signup = () => {
 
   const checkAdminLimit = async () => {
     try {
-      // Check how many admins exist in admin_roles table
-      const { count, error } = await supabase
-        .from('admin_roles')
-        .select('*', { count: 'exact', head: true })
+      // Check lockdown status from new admin_lockdown table
+      const { data: lockdownData, error: lockdownError } = await supabase
+        .rpc('get_admin_lockdown_status')
 
-      if (error) {
-        console.error('Error checking admin count:', error)
-        setAdminCount(0)
-      } else {
+      if (lockdownError) {
+        console.error('Error checking lockdown status:', lockdownError)
+        // Fallback to old method
+        const { count, error } = await supabase
+          .from('admin_roles')
+          .select('*', { count: 'exact', head: true })
+        
         setAdminCount(count || 0)
+      } else if (lockdownData && lockdownData.length > 0) {
+        const status = lockdownData[0]
+        setAdminCount(status.current_admins || 0)
+        
+        // If system is locked and admin limit reached, show immediate error
+        if (status.is_locked && !status.can_add_admin) {
+          showError('Admin registration is currently disabled. Contact administrator for access.', {
+            title: 'Registration Disabled',
+            duration: 0 // Don't auto-dismiss
+          })
+        }
       }
     } catch (error) {
       console.error('Error checking admin limit:', error)
-      setAdminCount(0)
+      setAdminCount(999) // Set high number to trigger lockdown
     } finally {
       setCheckingLimit(false)
     }
@@ -75,15 +80,12 @@ export const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault()
     
-    if (!validateForm()) return
-    
-    // Check admin limit (max 2 admins)
-    if (adminCount >= 2) {
-      showError('Maximum number of admin accounts (2) has been reached. Contact existing admin for access.', {
-        title: 'Admin Limit Reached'
-      })
-      return
-    }
+    // REGISTRATION DISABLED - No new admin registrations allowed
+    showError('Admin registration is currently disabled. Please contact the administrator for access.', {
+      title: 'Registration Disabled',
+      duration: 0
+    })
+    return
 
     setLoading(true)
 
@@ -215,162 +217,59 @@ export const Signup = () => {
             <p className="text-gray-600">Join Blessing Poultries Admin Team</p>
           </div>
 
-          {/* Admin Limit Warning */}
-          {adminCount >= 1 && (
-            <motion.div
-              className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex items-start gap-3">
-                <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-800">
-                    Admin Limit Notice
+          {/* REGISTRATION DISABLED MESSAGE */}
+          <motion.div
+            className="mb-6 p-6 bg-orange-50 border border-orange-200 rounded-xl"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="w-6 h-6 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-lg font-bold text-orange-800 mb-2">
+                  Registration Currently Disabled
+                </p>
+                <p className="text-sm text-orange-700 mb-3">
+                  Admin registration is currently disabled for this system.
+                </p>
+                <div className="bg-orange-100 rounded-lg p-3 mt-3">
+                  <p className="text-xs text-orange-800 font-medium">
+                    Need Access?
                   </p>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    {adminCount === 1 
-                      ? 'Only 1 more admin account can be created (1/2 used)'
-                      : 'Maximum admin accounts reached (2/2 used)'
-                    }
+                  <p className="text-xs text-orange-700 mt-1">
+                    Please contact the system administrator for assistance.
                   </p>
                 </div>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
 
-          {adminCount >= 2 ? (
-            /* Max Admins Reached */
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiAlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Admin Limit Reached
-              </h3>
-              <p className="text-gray-600 mb-6">
-                The maximum number of admin accounts (2) has been reached. 
-                Please contact an existing administrator for access.
-              </p>
+          {/* REGISTRATION DISABLED */}
+          <div className="text-center py-8">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiLock className="w-10 h-10 text-orange-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Registration Disabled
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+              Admin registration is currently not available. 
+              Contact the administrator if you need access.
+            </p>
+            <div className="space-y-3">
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
               >
+                <FiArrowLeft className="w-4 h-4" />
                 Go to Login
               </Link>
+              <p className="text-xs text-gray-500">
+                Contact administrator for access requests
+              </p>
             </div>
-          ) : (
-            /* Signup Form */
-            <form onSubmit={handleSignup} className="space-y-6">
-              {/* Full Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-              </div>
+          </div>
 
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="admin@blessingpoultries.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="Create a strong password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="Confirm your password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Signup Button */}
-              <motion.button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: loading ? 1 : 1.02 }}
-                whileTap={{ scale: loading ? 1 : 0.98 }}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Creating Account...
-                  </div>
-                ) : (
-                  'Create Admin Account'
-                )}
-              </motion.button>
-            </form>
-          )}
 
           {/* Login Link */}
           <div className="mt-8 text-center">

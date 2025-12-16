@@ -69,7 +69,6 @@ export const ProductCard = ({ product }) => {
       `Price: ${formatPrice(product.price)}\n` +
       `Category: ${product.category}${stockInfo}\n` +
       `Description: ${product.description || 'Premium quality product'}\n\n` +
-      `Product Image: ${product.image_url}\n\n` +
       `View This Product: ${productUrl}\n\n` +
       `Hello, I am interested in this specific product. Please provide more details about availability, delivery options, and payment methods.\n\n` +
       `Thank you for your time.`
