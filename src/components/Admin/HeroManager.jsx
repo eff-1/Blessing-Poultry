@@ -81,7 +81,7 @@ export const HeroManager = () => {
           name: 'normal',
           title: 'Blessing Poultries',
           subtitle: 'Fresh, Healthy, Naturally Raised Poultry',
-          description: 'Trusted poultry production and expert bird treatments for over 10 years in Ota',
+          description: 'Trusted poultry production and expert bird treatments for over 5 years in Ota',
           discount_text: 'Quality Assured',
           background_image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=1200',
           is_active: false

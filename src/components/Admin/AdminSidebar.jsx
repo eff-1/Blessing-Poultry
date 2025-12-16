@@ -52,7 +52,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab }) => {
       </div>
       
       {/* Navigation */}
-      <nav className={`flex-1 ${isMobile ? 'p-4 space-y-2' : 'p-4 lg:p-6 space-y-1'} overflow-y-auto`}>
+      <nav className={`flex-1 ${isMobile ? 'p-4 space-y-2' : 'p-4 lg:p-6 space-y-1'} overflow-y-auto custom-scrollbar`}>
         {menuItems.map((item) => {
           const Icon = item.icon
           return (

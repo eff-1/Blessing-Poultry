@@ -39,8 +39,8 @@ export const About = () => {
   ]
 
   const stats = [
-    { number: '10+', label: 'Years Experience' },
-    { number: '5000+', label: 'Happy Customers' },
+    { number: '5+', label: 'Years Experience' },
+    { number: '500+', label: 'Happy Customers' },
     { number: '100%', label: 'Fresh Products' },
     { number: '24/7', label: 'Support' }
   ]
@@ -82,7 +82,7 @@ export const About = () => {
                 alt="Blessing Poultries Farm"
               />
               <div className="about-image-badge">
-                <span className="badge-number">10+</span>
+                <span className="badge-number">5+</span>
                 <span className="badge-text">Years of Excellence</span>
               </div>
             </div>

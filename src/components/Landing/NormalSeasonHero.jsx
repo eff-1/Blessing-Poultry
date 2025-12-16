@@ -28,7 +28,7 @@ const NormalSeasonHero = () => {
               </h1>
               
               <p className="text-gray-700 text-base mb-8 leading-relaxed">
-                Trusted poultry production and expert bird treatments for over 10 years in Ota.
+                Trusted poultry production and expert bird treatments for over 5 years in Ota.
               </p>
               
               <div className="flex gap-4">
@@ -51,7 +51,7 @@ const NormalSeasonHero = () => {
               
               <div className="mt-8 flex items-center gap-2 text-sm text-green-700">
                 <GiChicken className="w-5 h-5" />
-                <span>Located in Ota • 10+ Years Experience</span>
+                <span>Located in Ota • 5+ Years Experience</span>
               </div>
             </div>
             
@@ -91,7 +91,7 @@ const NormalSeasonHero = () => {
             </h1>
             
             <p className="text-base mb-6 text-gray-200">
-              Trusted poultry production • 10+ years in Ota
+              Trusted poultry production • 5+ years in Ota
             </p>
             
             <div className="flex gap-3 justify-center">

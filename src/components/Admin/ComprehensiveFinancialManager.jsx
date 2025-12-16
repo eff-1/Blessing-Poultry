@@ -38,7 +38,12 @@ import {
   FiRefreshCw,
   FiFileText,
   FiMail,
-  FiLock
+  FiLock,
+  FiX,
+  FiActivity,
+  FiTarget,
+  FiArrowUp,
+  FiArrowDown
 } from 'react-icons/fi'
 
 export const ComprehensiveFinancialManager = () => {
@@ -65,15 +70,30 @@ export const ComprehensiveFinancialManager = () => {
   const [monthlyBudget, setMonthlyBudget] = useState(null)
   const [showBudgetModal, setShowBudgetModal] = useState(false)
   const [budgetCategories, setBudgetCategories] = useState([])
-  const [budgetProgress, setBudgetProgress] = useState({ spent: 0, remaining: 0, percentage: 0 })
+  const [budgetProgress, setBudgetProgress] = useState({ 
+    spent: 0, 
+    remaining: 0, 
+    percentage: 0, 
+    actualIncome: 0, 
+    netFlow: 0, 
+    savings: 0, 
+    overspent: 0,
+    budgetEfficiency: 0,
+    isOnTrack: true,
+    flowStatus: 'neutral'
+  })
   const [showOverview, setShowOverview] = useState(false) // Collapsed by default on mobile
+  const [showBudgetDetails, setShowBudgetDetails] = useState(false) // Collapsible budget section
+  const [dismissedAlerts, setDismissedAlerts] = useState(new Set())
   const [newBudget, setNewBudget] = useState({
+    period_type: 'monthly', // monthly, yearly, decades
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     budget_amount: '',
     notes: ''
   })
   const [creatingBudget, setCreatingBudget] = useState(false)
+  const [editingBudget, setEditingBudget] = useState(false)
 
   // Multi-record forms
   const [expenseRecords, setExpenseRecords] = useState([{
@@ -118,6 +138,19 @@ export const ComprehensiveFinancialManager = () => {
     }
   }, [selectedPeriod, isAuthorized])
 
+  // Auto-scroll to results when searching
+  useEffect(() => {
+    if (searchTerm) {
+      const resultsSection = document.querySelector('[data-search-results]')
+      if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [searchTerm])
+
+  // Smart refresh only when data changes are detected (no disruptive auto-refresh)
+  // Data will refresh automatically when records are added/edited/deleted
+
   const fetchBudgetData = async () => {
     try {
       const currentDate = new Date()
@@ -135,24 +168,98 @@ export const ComprehensiveFinancialManager = () => {
       if (budget) {
         setMonthlyBudget(budget)
         
-        // Get budget categories
+        // Calculate proper date range (handle year rollover)
+        const nextMonth = month === 12 ? 1 : month + 1
+        const nextYear = month === 12 ? year + 1 : year
+        
+        // Get REAL expenses for this month/year
+        const { data: realExpenses } = await supabase
+          .from('expenses')
+          .select('amount, category, date')
+          .gte('date', `${year}-${month.toString().padStart(2, '0')}-01`)
+          .lt('date', `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`)
+
+        // Get REAL income for this month/year  
+        const { data: realIncome } = await supabase
+          .from('income')
+          .select('amount, source, date')
+          .gte('date', `${year}-${month.toString().padStart(2, '0')}-01`)
+          .lt('date', `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`)
+
+        // Calculate REAL totals
+        const actualExpenses = realExpenses?.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0) || 0
+        const actualIncome = realIncome?.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0) || 0
+        
+        const budgetAmount = parseFloat(budget.budget_amount || 0)
+        const remaining = budgetAmount - actualExpenses
+        const percentage = budgetAmount > 0 ? (actualExpenses / budgetAmount) * 100 : 0
+        const savings = remaining > 0 ? remaining : 0
+        const overspent = remaining < 0 ? Math.abs(remaining) : 0
+        
+        // Calculate flow indicators
+        const incomeVsBudget = actualIncome - budgetAmount
+        const netFlow = actualIncome - actualExpenses
+        const budgetEfficiency = budgetAmount > 0 ? ((budgetAmount - actualExpenses) / budgetAmount) * 100 : 0
+
+        // Debug budget calculations
+        console.log('Budget Debug:', {
+          budgetAmount,
+          actualExpenses,
+          actualIncome,
+          percentage: percentage.toFixed(2),
+          remaining,
+          savings,
+          overspent,
+          isOnTrack: percentage <= 80
+        });
+
+        setBudgetProgress({
+          spent: actualExpenses || 0,
+          remaining: remaining || 0,
+          percentage: percentage || 0,
+          savings: savings || 0,
+          overspent: overspent || 0,
+          actualIncome: actualIncome || 0,
+          incomeVsBudget: incomeVsBudget || 0,
+          netFlow: netFlow || 0,
+          budgetEfficiency: budgetEfficiency || 0,
+          isOnTrack: (percentage || 0) <= 80,
+          flowStatus: (netFlow || 0) > 0 ? 'positive' : (netFlow || 0) < 0 ? 'negative' : 'neutral'
+        })
+
+        // Get budget categories for detailed tracking
         const { data: categories } = await supabase
           .from('budget_categories')
           .select('*')
           .eq('budget_id', budget.id)
 
         setBudgetCategories(categories || [])
+      } else {
+        // No budget set, but still calculate actual spending for reference
+        const nextMonth = month === 12 ? 1 : month + 1
+        const nextYear = month === 12 ? year + 1 : year
         
-        // Calculate budget progress
-        const totalSpent = categories?.reduce((sum, cat) => sum + parseFloat(cat.spent_amount || 0), 0) || 0
-        const budgetAmount = parseFloat(budget.budget_amount || 0)
-        const remaining = budgetAmount - totalSpent
-        const percentage = budgetAmount > 0 ? (totalSpent / budgetAmount) * 100 : 0
+        const { data: realExpenses } = await supabase
+          .from('expenses')
+          .select('amount')
+          .gte('date', `${year}-${month.toString().padStart(2, '0')}-01`)
+          .lt('date', `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`)
 
+        const { data: realIncome } = await supabase
+          .from('income')
+          .select('amount')
+          .gte('date', `${year}-${month.toString().padStart(2, '0')}-01`)
+          .lt('date', `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`)
+
+        const actualExpenses = realExpenses?.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0) || 0
+        const actualIncome = realIncome?.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0) || 0
+        
         setBudgetProgress({
-          spent: totalSpent,
-          remaining: remaining,
-          percentage: percentage
+          spent: actualExpenses || 0,
+          actualIncome: actualIncome || 0,
+          netFlow: (actualIncome || 0) - (actualExpenses || 0),
+          flowStatus: ((actualIncome || 0) - (actualExpenses || 0)) > 0 ? 'positive' : 'negative',
+          noBudget: true
         })
       }
     } catch (error) {
@@ -203,15 +310,21 @@ export const ComprehensiveFinancialManager = () => {
         .from('budget_categories')
         .insert(categoriesWithBudgetId)
 
-      showSuccess('Budget created successfully!')
-      setShowBudgetModal(false)
+      showSuccess(`${newBudget.period_type === 'monthly' ? 'Monthly' : newBudget.period_type === 'yearly' ? 'Yearly' : 'Decade'} budget created successfully!`)
+      
+      // Reset form
       setNewBudget({
+        period_type: 'monthly',
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         budget_amount: '',
         notes: ''
       })
-      fetchBudgetData()
+      
+      // Close modal and refresh data
+      setShowBudgetModal(false)
+      await fetchBudgetData()
+      await fetchFinancialData() // Refresh financial data to show connection
     } catch (error) {
       console.error('Error creating budget:', error)
       if (error.message.includes('relation "monthly_budgets" does not exist')) {
@@ -219,6 +332,39 @@ export const ComprehensiveFinancialManager = () => {
       } else {
         showError('Failed to create budget: ' + error.message)
       }
+    } finally {
+      setCreatingBudget(false)
+    }
+  }
+
+  const handleUpdateBudget = async (e) => {
+    e.preventDefault()
+    setCreatingBudget(true)
+    
+    try {
+      const budgetData = {
+        budget_amount: parseFloat(newBudget.budget_amount.replace(/,/g, '')),
+        expense_limit: parseFloat(newBudget.budget_amount.replace(/,/g, '')) * 0.8,
+        income_target: parseFloat(newBudget.budget_amount.replace(/,/g, '')) * 1.2,
+        notes: newBudget.notes,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('monthly_budgets')
+        .update(budgetData)
+        .eq('id', monthlyBudget.id)
+
+      if (error) throw error
+
+      showSuccess('Budget updated successfully!')
+      setEditingBudget(false)
+      setShowBudgetModal(false)
+      await fetchBudgetData()
+      await fetchFinancialData()
+    } catch (error) {
+      console.error('Error updating budget:', error)
+      showError('Failed to update budget: ' + error.message)
     } finally {
       setCreatingBudget(false)
     }
@@ -340,65 +486,169 @@ export const ComprehensiveFinancialManager = () => {
       // Use 'N' instead of ₦ symbol to avoid encoding issues
       const currency = 'NGN'
       
-      // HEADER SECTION
-      doc.setFontSize(22)
+      // Generate dynamic financial advice based on results
+      const getFinancialAdvice = () => {
+        const advice = []
+        
+        if (profit < 0) {
+          advice.push('URGENT: Implement cost reduction strategies immediately')
+          advice.push('Consider diversifying income sources (egg processing, organic feed sales)')
+          advice.push('Review supplier contracts for better pricing on feed and medication')
+        } else if (profitMargin < 10) {
+          advice.push('Profit margin is low - focus on operational efficiency')
+          advice.push('Explore premium product lines (organic eggs, free-range chickens)')
+          advice.push('Optimize feed conversion ratios to reduce costs')
+        } else if (profitMargin > 25) {
+          advice.push('Excellent profitability! Consider expansion opportunities')
+          advice.push('Invest in automation to scale operations')
+          advice.push('Build emergency fund for market fluctuations')
+        } else {
+          advice.push('Healthy profit margins - maintain current strategies')
+          advice.push('Monitor seasonal trends for better planning')
+          advice.push('Consider gradual capacity expansion')
+        }
+        
+        // Budget-specific advice
+        if (monthlyBudget) {
+          const budgetUsage = (budgetProgress.spent / parseFloat(monthlyBudget.budget_amount)) * 100
+          if (budgetUsage > 100) {
+            advice.push(`Budget exceeded by ${(budgetUsage - 100).toFixed(1)}% - review spending controls`)
+          } else if (budgetUsage < 70) {
+            advice.push('Under-budget performance - consider strategic investments')
+          }
+        }
+        
+        return advice
+      }
+      
+      // CLEAN MINIMALIST HEADER
+      doc.setTextColor(0, 0, 0) // Pure black for maximum readability
+      doc.setFontSize(24)
       doc.setFont('helvetica', 'bold')
       doc.text('BLESSING POULTRIES', 105, 25, { align: 'center' })
       
       doc.setFontSize(16)
       doc.setFont('helvetica', 'normal')
-      doc.text('Financial Performance Report', 105, 35, { align: 'center' })
+      doc.text('Financial Analysis Report', 105, 35, { align: 'center' })
       
       doc.setFontSize(10)
-      doc.text(`Report Period: ${selectedPeriod.toUpperCase()}`, 105, 45, { align: 'center' })
-      doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString()}`, 105, 52, { align: 'center' })
+      doc.text(`Period: ${selectedPeriod.toUpperCase()} | Generated: ${new Date().toLocaleDateString('en-GB')}`, 105, 45, { align: 'center' })
       
-      // Draw header line
+      // Simple clean line separator
+      doc.setDrawColor(0, 0, 0)
       doc.setLineWidth(0.5)
-      doc.line(20, 58, 190, 58)
+      doc.line(20, 55, 190, 55)
       
-      // EXECUTIVE SUMMARY BOX
-      doc.setFillColor(245, 245, 245)
-      doc.rect(20, 65, 170, 45, 'F')
-      doc.setLineWidth(0.3)
-      doc.rect(20, 65, 170, 45)
-      
+      // CLEAN EXECUTIVE SUMMARY
+      doc.setTextColor(0, 0, 0)
       doc.setFontSize(14)
       doc.setFont('helvetica', 'bold')
-      doc.text('EXECUTIVE SUMMARY', 25, 75)
+      doc.text('EXECUTIVE SUMMARY', 20, 70)
       
+      // Simple underline
+      doc.setLineWidth(0.3)
+      doc.line(20, 72, 90, 72)
+      
+      doc.setTextColor(0, 0, 0) // Reset to black
       doc.setFontSize(11)
       doc.setFont('helvetica', 'normal')
       
-      // Financial metrics in organized layout
-      doc.text('Total Revenue:', 25, 85)
+      // Clean financial metrics - black and white only
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      
+      doc.text('Total Revenue:', 20, 85)
+      doc.setFont('helvetica', 'bold')
       doc.text(`${currency} ${totalIncome.toLocaleString()}`, 80, 85)
       
-      doc.text('Total Expenses:', 25, 92)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Total Expenses:', 20, 92)
+      doc.setFont('helvetica', 'bold')
       doc.text(`${currency} ${totalExpenses.toLocaleString()}`, 80, 92)
       
-      doc.text('Net Profit:', 25, 99)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Net Profit:', 20, 99)
       doc.setFont('helvetica', 'bold')
       doc.text(`${currency} ${profit.toLocaleString()}`, 80, 99)
       
       doc.setFont('helvetica', 'normal')
       doc.text('Profit Margin:', 120, 85)
+      doc.setFont('helvetica', 'bold')
       doc.text(`${profitMargin.toFixed(1)}%`, 160, 85)
       
-      doc.text('Total Transactions:', 120, 92)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Transactions:', 120, 92)
       doc.text(`${expenses.length + income.length}`, 160, 92)
       
-      // Performance indicator
-      doc.text('Performance:', 120, 99)
+      doc.text('Status:', 120, 99)
       doc.setFont('helvetica', 'bold')
       doc.text(profit >= 0 ? 'PROFITABLE' : 'LOSS', 160, 99)
       
-      let yPos = 125
+      // Clean Budget Section
+      let yPos = 115
+      if (monthlyBudget) {
+        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(12)
+        doc.setFont('helvetica', 'bold')
+        doc.text('BUDGET ANALYSIS', 20, yPos)
+        
+        // Simple underline
+        doc.setLineWidth(0.3)
+        doc.line(20, yPos + 2, 75, yPos + 2)
+        yPos += 10
+        
+        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        
+        const budgetUsage = (budgetProgress.spent / parseFloat(monthlyBudget.budget_amount)) * 100
+        doc.text(`Budget Set: ${currency} ${parseFloat(monthlyBudget.budget_amount).toLocaleString()}`, 20, yPos)
+        doc.text(`Actual Spent: ${currency} ${(budgetProgress.spent || 0).toLocaleString()}`, 20, yPos + 7)
+        
+        doc.text(`Usage: ${budgetUsage.toFixed(1)}%`, 120, yPos)
+        doc.setFont('helvetica', 'bold')
+        doc.text(`${budgetUsage > 100 ? 'OVER BUDGET' : budgetUsage > 80 ? 'NEAR LIMIT' : 'ON TRACK'}`, 120, yPos + 7)
+        
+        yPos += 25
+      }
+      
+      doc.setTextColor(0, 0, 0) // Reset color
+      
+      // Clean Recommendations Section
+      // Add page break if not enough space
+      if (yPos > 220) {
+        doc.addPage()
+        yPos = 20
+      }
+      
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.text('STRATEGIC RECOMMENDATIONS', 20, yPos)
+      
+      // Simple underline
+      doc.setLineWidth(0.3)
+      doc.line(20, yPos + 2, 120, yPos + 2)
+      yPos += 10
+      
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      
+      const advice = getFinancialAdvice()
+      advice.slice(0, 3).forEach((tip, index) => {
+        doc.text(`${index + 1}. ${tip}`, 20, yPos)
+        yPos += 6
+      })
+      
+      yPos += 10
       
       // FINANCIAL ANALYSIS SECTION
+      doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(14)
-      doc.text('FINANCIAL ANALYSIS', 20, yPos)
+      doc.text('DETAILED FINANCIAL ANALYSIS', 20, yPos)
       yPos += 10
       
       doc.setFont('helvetica', 'normal')
@@ -451,20 +701,36 @@ export const ComprehensiveFinancialManager = () => {
       
       yPos += 10
       
-      // EXPENSE BREAKDOWN
+      // Clean Expense Section
       if (expenses.length > 0) {
+        // Add page break if not enough space
+        if (yPos > 200) {
+          doc.addPage()
+          yPos = 20
+        }
+        
+        doc.setTextColor(0, 0, 0)
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(12)
         doc.text('EXPENSE BREAKDOWN', 20, yPos)
-        yPos += 8
+        doc.setLineWidth(0.3)
+        doc.line(20, yPos + 2, 85, yPos + 2)
+        yPos += 10
         
-        // Category summary
+        // Category summary with color coding
+        doc.setTextColor(0, 0, 0)
         doc.setFont('helvetica', 'normal')
         doc.setFontSize(9)
         Object.entries(expensesByCategory)
           .sort(([,a], [,b]) => b - a)
-          .forEach(([category, amount]) => {
+          .forEach(([category, amount], index) => {
             const percentage = ((amount / totalExpenses) * 100).toFixed(1)
+            
+            // Color code by expense size
+            if (percentage > 30) doc.setTextColor(220, 38, 38) // Dark red for high expenses
+            else if (percentage > 15) doc.setTextColor(245, 101, 101) // Medium red
+            else doc.setTextColor(107, 114, 128) // Gray for small expenses
+            
             doc.text(`${category}:`, 25, yPos)
             doc.text(`${currency} ${amount.toLocaleString()} (${percentage}%)`, 80, yPos)
             yPos += 5
@@ -506,25 +772,35 @@ export const ComprehensiveFinancialManager = () => {
         yPos += 10
       }
       
-      // INCOME BREAKDOWN
+      // Clean Income Section
       if (income.length > 0) {
         if (yPos > 200) {
           doc.addPage()
           yPos = 20
         }
         
+        doc.setTextColor(0, 0, 0)
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(12)
         doc.text('INCOME BREAKDOWN', 20, yPos)
-        yPos += 8
+        doc.setLineWidth(0.3)
+        doc.line(20, yPos + 2, 80, yPos + 2)
+        yPos += 10
         
-        // Source summary
+        // Source summary with color coding
+        doc.setTextColor(0, 0, 0)
         doc.setFont('helvetica', 'normal')
         doc.setFontSize(9)
         Object.entries(incomeBySource)
           .sort(([,a], [,b]) => b - a)
-          .forEach(([source, amount]) => {
+          .forEach(([source, amount], index) => {
             const percentage = ((amount / totalIncome) * 100).toFixed(1)
+            
+            // Color code by income contribution
+            if (percentage > 50) doc.setTextColor(22, 163, 74) // Dark green for major sources
+            else if (percentage > 25) doc.setTextColor(34, 197, 94) // Medium green
+            else doc.setTextColor(107, 114, 128) // Gray for minor sources
+            
             doc.text(`${source}:`, 25, yPos)
             doc.text(`${currency} ${amount.toLocaleString()} (${percentage}%)`, 80, yPos)
             yPos += 5
@@ -564,19 +840,30 @@ export const ComprehensiveFinancialManager = () => {
         })
       }
       
-      // FOOTER
+      // Clean Minimalist Footer
       const pageCount = doc.internal.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i)
+        
+        // Simple line separator
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.3)
+        doc.line(20, 285, 190, 285)
+        
+        doc.setTextColor(0, 0, 0)
         doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
-        doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' })
-        doc.text('Confidential - Blessing Poultries Financial Report', 105, 285, { align: 'center' })
+        doc.text('BLESSING POULTRIES', 20, 292)
+        doc.text(`Page ${i} of ${pageCount}`, 105, 292, { align: 'center' })
+        doc.text('CONFIDENTIAL', 190, 292, { align: 'right' })
+        
+        doc.setFontSize(7)
+        doc.text('141, Idiroko Express Way, Oju-Ore, Ota', 105, 295, { align: 'center' })
       }
       
-      const fileName = `Blessing-Poultries-Financial-Report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.pdf`
+      const fileName = `Blessing-Poultries-Comprehensive-Report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
-      showSuccess('Professional financial report exported successfully!')
+      showSuccess('Enhanced financial report with budget analysis and strategic recommendations exported successfully!')
       
     } catch (error) {
       console.error('PDF Export Error:', error)
@@ -729,7 +1016,12 @@ export const ComprehensiveFinancialManager = () => {
         date: new Date().toISOString().split('T')[0],
         status: 'cleared'
       }])
-      await fetchFinancialData()
+      
+      // Refresh both financial data and budget data immediately
+      await Promise.all([
+        fetchFinancialData(),
+        fetchBudgetData()
+      ])
     } catch (error) {
       console.error('Error adding expenses:', error)
       showError('Failed to add expense records')
@@ -772,7 +1064,12 @@ export const ComprehensiveFinancialManager = () => {
         date: new Date().toISOString().split('T')[0],
         status: 'cleared'
       }])
-      await fetchFinancialData()
+      
+      // Refresh both financial data and budget data immediately
+      await Promise.all([
+        fetchFinancialData(),
+        fetchBudgetData()
+      ])
     } catch (error) {
       console.error('Error adding income:', error)
       showError('Failed to add income records')
@@ -801,7 +1098,12 @@ export const ComprehensiveFinancialManager = () => {
       showSuccess(`${type} record updated successfully`)
       setShowEditModal(false)
       setEditingRecord(null)
-      fetchFinancialData()
+      
+      // Refresh both financial data and budget data immediately
+      await Promise.all([
+        fetchFinancialData(),
+        fetchBudgetData()
+      ])
     } catch (error) {
       console.error('Update error:', error)
       showError('Failed to update record')
@@ -828,7 +1130,12 @@ export const ComprehensiveFinancialManager = () => {
 
       showSuccess(`${type} record deleted successfully`)
       setDeleteConfirm(null)
-      fetchFinancialData()
+      
+      // Refresh both financial data and budget data immediately
+      await Promise.all([
+        fetchFinancialData(),
+        fetchBudgetData()
+      ])
     } catch (error) {
       console.error('Delete error:', error)
       showError('Failed to delete record')
@@ -837,15 +1144,24 @@ export const ComprehensiveFinancialManager = () => {
 
   const calculateTotals = () => {
     const filteredExpenses = expenses.filter(expense => {
-      const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           expense.category.toLowerCase().includes(searchTerm.toLowerCase())
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch = !searchTerm || 
+        expense.description.toLowerCase().includes(searchLower) ||
+        expense.category.toLowerCase().includes(searchLower) ||
+        expense.store_name?.toLowerCase().includes(searchLower) ||
+        expense.amount.toString().includes(searchTerm) ||
+        new Date(expense.date).toLocaleDateString().includes(searchTerm)
       const matchesStatus = filterStatus === 'all' || expense.status === filterStatus
       return matchesSearch && matchesStatus
     })
 
     const filteredIncome = income.filter(inc => {
-      const matchesSearch = inc.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           inc.source.toLowerCase().includes(searchTerm.toLowerCase())
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch = !searchTerm ||
+        inc.description.toLowerCase().includes(searchLower) ||
+        inc.source.toLowerCase().includes(searchLower) ||
+        inc.amount.toString().includes(searchTerm) ||
+        new Date(inc.date).toLocaleDateString().includes(searchTerm)
       const matchesStatus = filterStatus === 'all' || inc.status === filterStatus
       return matchesSearch && matchesStatus
     })
@@ -876,17 +1192,17 @@ export const ComprehensiveFinancialManager = () => {
     const { totalExpenses, totalIncome, profit } = calculateTotals()
     
     if (profit < 0) {
-      alerts.push({ type: 'danger', message: 'Negative cash flow detected', icon: FiAlertTriangle })
+      alerts.push({ id: 'negative-cash-flow', type: 'danger', message: 'Negative cash flow detected', icon: FiAlertTriangle })
     }
     
     const pendingCount = expenses.filter(e => e.status === 'pending').length + income.filter(i => i.status === 'pending').length
     if (pendingCount > 0) {
-      alerts.push({ type: 'warning', message: `${pendingCount} pending transactions`, icon: FiClock })
+      alerts.push({ id: 'pending-transactions', type: 'warning', message: `${pendingCount} pending transactions`, icon: FiClock })
     }
     
     const flaggedCount = expenses.filter(e => e.status === 'flagged').length + income.filter(i => i.status === 'flagged').length
     if (flaggedCount > 0) {
-      alerts.push({ type: 'danger', message: `${flaggedCount} flagged transactions need review`, icon: FiFlag })
+      alerts.push({ id: 'flagged-transactions', type: 'danger', message: `${flaggedCount} flagged transactions need review`, icon: FiFlag })
     }
     
     return alerts
@@ -954,6 +1270,16 @@ export const ComprehensiveFinancialManager = () => {
               <div className="text-xs text-green-600">Last updated: {new Date().toLocaleTimeString()}</div>
             </div>
             <button
+              onClick={async () => {
+                await Promise.all([fetchFinancialData(), fetchBudgetData()])
+                showSuccess('Data refreshed successfully')
+              }}
+              className="hidden sm:flex p-2 hover:bg-green-100 rounded-lg transition-colors items-center gap-1"
+              title="Refresh data"
+            >
+              <FiRefreshCw className="w-4 h-4 text-green-600" />
+            </button>
+            <button
               onClick={() => setShowOverview(!showOverview)}
               className="sm:hidden p-2 hover:bg-green-100 rounded-lg transition-colors"
             >
@@ -963,7 +1289,7 @@ export const ComprehensiveFinancialManager = () => {
         </div>
         
         <div className={`${showOverview ? 'block' : 'hidden'} sm:block`}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
           <div className="bg-white rounded-lg p-3 text-center border border-green-100 shadow-sm">
             <div className="flex items-center justify-center mb-2">
               <FiTrendingUp className="w-5 h-5 text-green-600 mr-2" />
@@ -1028,72 +1354,206 @@ export const ComprehensiveFinancialManager = () => {
       {/* Alerts Bar */}
       {alerts.length > 0 && (
         <div className="space-y-2">
-          {alerts.map((alert, index) => (
+          {alerts.filter(alert => !dismissedAlerts.has(alert.id)).map((alert) => (
             <motion.div
-              key={index}
+              key={alert.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`flex items-center gap-3 p-3 rounded-lg ${
+              exit={{ opacity: 0, x: -20 }}
+              className={`flex items-center justify-between gap-3 p-3 rounded-lg ${
                 alert.type === 'danger' ? 'bg-red-50 border border-red-200 text-red-800' :
                 alert.type === 'warning' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' :
                 'bg-blue-50 border border-blue-200 text-blue-800'
               }`}
             >
-              <alert.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{alert.message}</span>
+              <div className="flex items-center gap-3">
+                <alert.icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm font-medium">{alert.message}</span>
+              </div>
+              <button
+                onClick={() => setDismissedAlerts(prev => new Set([...prev, alert.id]))}
+                className="p-1 hover:bg-black/10 rounded transition-colors"
+                title="Dismiss alert"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
             </motion.div>
           ))}
         </div>
       )}
 
-      {/* Budget Management Section */}
+      {/* Collapsible Budget Flow Tracking Section */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 shadow-sm"
+        className="bg-green-50/40 border border-green-200/50 rounded-xl shadow-sm"
       >
-        <div className="flex items-center justify-between">
+        {/* Always Visible Header */}
+        <div className="flex items-center justify-between p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg flex items-center justify-center">
-              <FiDollarSign className="w-5 h-5 text-blue-600" />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              !monthlyBudget ? 'bg-gray-100' :
+              budgetProgress.percentage > 100 ? 'bg-red-100' :
+              budgetProgress.percentage > 80 ? 'bg-amber-100' : 'bg-green-100'
+            }`}>
+              <FiDollarSign className={`w-5 h-5 ${
+                !monthlyBudget ? 'text-gray-600' :
+                budgetProgress.percentage > 100 ? 'text-red-600' :
+                budgetProgress.percentage > 80 ? 'text-amber-600' : 'text-green-600'
+              }`} />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900">Monthly Budget</h3>
-              {monthlyBudget ? (
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="text-sm text-blue-700">
-                    ₦{budgetProgress.spent.toLocaleString()} / ₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-green-800">Budget Tracker</h3>
+                {monthlyBudget && (
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    budgetProgress.percentage > 100 ? 'bg-red-100 text-red-700' :
+                    budgetProgress.percentage > 80 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                  }`}>
+                    {budgetProgress.percentage.toFixed(0)}% Used
                   </span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 bg-blue-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          budgetProgress.percentage > 80 ? 'bg-red-500' : 
-                          budgetProgress.percentage > 60 ? 'bg-yellow-500' : 'bg-gradient-to-r from-blue-500 to-green-500'
-                        }`}
-                        style={{ width: `${Math.min(budgetProgress.percentage, 100)}%` }}
-                      />
-                    </div>
-                    <span className={`text-sm font-medium ${
-                      budgetProgress.percentage > 80 ? 'text-red-600' : 
-                      budgetProgress.percentage > 60 ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {budgetProgress.percentage.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
+                )}
+              </div>
+              {monthlyBudget ? (
+                <p className="text-sm text-green-600">
+                  ₦{(budgetProgress.spent || 0).toLocaleString()} / ₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}
+                </p>
               ) : (
-                <p className="text-sm text-blue-600 mt-1">No budget set for this month</p>
+                <p className="text-sm text-gray-500">No budget set</p>
               )}
             </div>
           </div>
-          <button
-            onClick={() => setShowBudgetModal(true)}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all text-sm font-medium"
-          >
-            {monthlyBudget ? 'Manage' : 'Set Budget'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBudgetDetails(!showBudgetDetails)}
+              className="p-2 hover:bg-green-100 rounded-lg transition-colors"
+              title={showBudgetDetails ? 'Collapse Details' : 'Show Details'}
+            >
+              {showBudgetDetails ? <FiMinimize2 className="w-4 h-4 text-green-600" /> : <FiMaximize2 className="w-4 h-4 text-green-600" />}
+            </button>
+            <button
+              onClick={() => {
+                if (monthlyBudget) {
+                  // Pre-fill form with existing budget data
+                  setNewBudget({
+                    period_type: 'monthly',
+                    month: monthlyBudget.month,
+                    year: monthlyBudget.year,
+                    budget_amount: monthlyBudget.budget_amount.toString(),
+                    notes: monthlyBudget.notes || ''
+                  });
+                  setEditingBudget(true);
+                }
+                setShowBudgetModal(true);
+              }}
+              className="px-3 py-2 bg-green-500/80 text-white rounded-lg hover:bg-green-600/90 transition-all text-sm font-medium shadow-sm"
+            >
+              {monthlyBudget ? 'Edit' : 'Set Budget'}
+            </button>
+          </div>
         </div>
+
+        {/* Collapsible Detailed Metrics */}
+        <AnimatePresence>
+          {showBudgetDetails && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="px-3 pb-3 sm:px-4 sm:pb-4"
+            >
+              {/* Real-time Flow Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="bg-white/60 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Income This Month</p>
+                  <p className="font-bold text-green-600">₦{(budgetProgress.actualIncome || 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-white/60 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Expenses This Month</p>
+                  <p className="font-bold text-red-600">₦{(budgetProgress.spent || 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-white/60 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Net Flow</p>
+                  <p className={`font-bold ${(budgetProgress.netFlow || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(budgetProgress.netFlow || 0) >= 0 ? '+' : ''}₦{(budgetProgress.netFlow || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white/60 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">
+                    {monthlyBudget ? ((budgetProgress.savings || 0) > 0 ? 'Savings' : 'Overspent') : 'No Budget'}
+                  </p>
+                  <p className={`font-bold ${
+                    !monthlyBudget ? 'text-gray-600' :
+                    (budgetProgress.savings || 0) > 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {!monthlyBudget ? 'Set Budget' : 
+                     (budgetProgress.savings || 0) > 0 ? `+₦${(budgetProgress.savings || 0).toLocaleString()}` : 
+                     `-₦${(budgetProgress.overspent || 0).toLocaleString()}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Budget Progress Bar (only if budget exists) */}
+              {monthlyBudget && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-green-700">
+                      Budget: ₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}
+                    </span>
+                    <span className="text-sm font-medium">
+                      {(budgetProgress.percentage || 0).toFixed(1)}% used
+                    </span>
+                  </div>
+                  <div className="w-full bg-green-200/50 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        (budgetProgress.percentage || 0) > 100 ? 'bg-red-500' :
+                        (budgetProgress.percentage || 0) > 80 ? 'bg-amber-400' : 'bg-green-400'
+                      }`}
+                      style={{ width: `${Math.min(budgetProgress.percentage || 0, 100)}%` }}
+                    />
+                  </div>
+                  {(budgetProgress.percentage || 0) > 100 && (
+                    <div className="text-xs text-red-600 mt-1 text-center">
+                      <FiAlertTriangle className="w-3 h-3 inline mr-1" />Over budget by ₦{(budgetProgress.overspent || 0).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Flow Status Indicator */}
+              <div className={`mt-4 p-3 rounded-lg ${
+                budgetProgress.flowStatus === 'positive' ? 'bg-green-100 border border-green-300' :
+                budgetProgress.flowStatus === 'negative' ? 'bg-red-100 border border-red-300' :
+                'bg-gray-100 border border-gray-300'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white">
+                    {budgetProgress.flowStatus === 'positive' ? <FiArrowUp className="w-5 h-5 text-green-600" /> : 
+                     budgetProgress.flowStatus === 'negative' ? <FiArrowDown className="w-5 h-5 text-red-600" /> : 
+                     <FiActivity className="w-5 h-5 text-gray-600" />}
+                  </div>
+                  <div>
+                    <p className={`font-semibold text-sm ${
+                      budgetProgress.flowStatus === 'positive' ? 'text-green-800' :
+                      budgetProgress.flowStatus === 'negative' ? 'text-red-800' :
+                      'text-gray-800'
+                    }`}>
+                      {budgetProgress.flowStatus === 'positive' ? 'Positive Cash Flow' :
+                       budgetProgress.flowStatus === 'negative' ? 'Negative Cash Flow' :
+                       'Neutral Cash Flow'}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {budgetProgress.flowStatus === 'positive' ? 'Income exceeds expenses' :
+                       budgetProgress.flowStatus === 'negative' ? 'Expenses exceed income' :
+                       'Income equals expenses'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Mobile-Optimized Controls */}
@@ -1104,11 +1564,20 @@ export const ComprehensiveFinancialManager = () => {
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search transactions..."
+              placeholder="Search by description, amount, category, store, date..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 w-full text-sm"
+              className="pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 w-full text-sm"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="Clear search"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           <div className="flex gap-2">
@@ -1216,7 +1685,7 @@ export const ComprehensiveFinancialManager = () => {
       </div>
 
       {/* Mobile-Optimized Transaction Table */}
-      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden" data-search-results>
         <div className="p-3 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900">Transaction Records</h3>
@@ -1228,7 +1697,7 @@ export const ComprehensiveFinancialManager = () => {
         
         {/* Mobile Card View */}
         <div className="block sm:hidden">
-          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto custom-scrollbar">
             {/* Expenses */}
             {filteredExpenses.map((expense) => (
               <div key={`expense-${expense.id}`} className="p-4 hover:bg-gray-50">
@@ -1238,7 +1707,7 @@ export const ComprehensiveFinancialManager = () => {
                     <p className="text-sm text-gray-600">{expense.category}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-semibold text-red-600">-₦{expense.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-red-600">-₦{(expense.amount || 0).toLocaleString()}</p>
                     <div className="flex items-center gap-1 justify-end mt-1">
                       {getStatusIcon(expense.status)}
                       <span className="text-xs capitalize">{expense.status}</span>
@@ -1280,7 +1749,7 @@ export const ComprehensiveFinancialManager = () => {
                     <p className="text-sm text-gray-600">{inc.source}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-semibold text-green-600">+₦{inc.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-green-600">+₦{(inc.amount || 0).toLocaleString()}</p>
                     <div className="flex items-center gap-1 justify-end mt-1">
                       {getStatusIcon(inc.status)}
                       <span className="text-xs capitalize">{inc.status}</span>
@@ -1328,7 +1797,7 @@ export const ComprehensiveFinancialManager = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200 max-h-96 overflow-y-auto">
+            <tbody className="bg-white divide-y divide-gray-200 max-h-96 overflow-y-auto custom-scrollbar">
               {/* Expenses */}
               {filteredExpenses.map((expense) => (
                 <tr key={`expense-${expense.id}`} className="hover:bg-gray-50">
@@ -1338,7 +1807,7 @@ export const ComprehensiveFinancialManager = () => {
                   <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{expense.description}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{expense.category}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                    -₦{expense.amount.toLocaleString()}
+                    -₦{(expense.amount || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
@@ -1380,7 +1849,7 @@ export const ComprehensiveFinancialManager = () => {
                   <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{inc.description}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{inc.source}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                    +₦{inc.amount.toLocaleString()}
+                    +₦{(inc.amount || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
@@ -1666,7 +2135,7 @@ export const ComprehensiveFinancialManager = () => {
         onConfirm={handleDeleteRecord}
         type="danger"
         title="Delete Financial Record"
-        message="⚠️ FINANCIAL RECORD WARNING: This action cannot be undone and will permanently delete this record from your financial books."
+        message="FINANCIAL RECORD WARNING: This action cannot be undone and will permanently delete this record from your financial books."
         itemName={deleteConfirm?.description}
         description="Deleting financial records affects your accounting accuracy and audit trail. This action requires double confirmation for financial compliance."
         confirmText="DELETE FINANCIAL RECORD"
@@ -1703,15 +2172,12 @@ export const ComprehensiveFinancialManager = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
+              <CustomDropdown
+                options={statusOptions}
                 value={editingRecord.status}
-                onChange={(e) => setEditingRecord({...editingRecord, status: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              >
-                <option value="cleared">Cleared</option>
-                <option value="pending">Pending</option>
-                <option value="flagged">Flagged</option>
-              </select>
+                onChange={(value) => setEditingRecord({...editingRecord, status: value})}
+                placeholder="Select Status"
+              />
             </div>
             
             <div>
@@ -1747,42 +2213,103 @@ export const ComprehensiveFinancialManager = () => {
       {/* Budget Management Modal */}
       <Modal isOpen={showBudgetModal} onClose={() => setShowBudgetModal(false)} title="Budget Management">
         <div className="space-y-6">
-          {/* Current Budget Overview */}
+          {/* Enhanced Budget Flow Analysis */}
           {monthlyBudget && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Current Month Budget</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Budget Amount</p>
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <h3 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
+                <FiBarChart className="w-5 h-5" />
+                Budget Flow Analysis
+              </h3>
+              
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Budget Set</p>
                   <p className="text-lg font-bold text-green-600">₦{parseFloat(monthlyBudget.budget_amount).toLocaleString()}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Spent</p>
-                  <p className="text-lg font-bold text-red-600">₦{budgetProgress.spent.toLocaleString()}</p>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Actually Spent</p>
+                  <p className="text-lg font-bold text-red-600">₦{(budgetProgress.spent || 0).toLocaleString()}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Remaining</p>
-                  <p className="text-lg font-bold text-blue-600">₦{budgetProgress.remaining.toLocaleString()}</p>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Income Earned</p>
+                  <p className="text-lg font-bold text-blue-600">₦{(budgetProgress.actualIncome || 0).toLocaleString()}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Usage</p>
-                  <p className={`text-lg font-bold ${budgetProgress.percentage > 80 ? 'text-red-600' : budgetProgress.percentage > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
-                    {budgetProgress.percentage.toFixed(1)}%
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">
+                    {budgetProgress.savings > 0 ? 'Saved' : 'Overspent'}
+                  </p>
+                  <p className={`text-lg font-bold ${budgetProgress.savings > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {budgetProgress.savings > 0 ? '+' : '-'}₦{(budgetProgress.savings || budgetProgress.overspent || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Net Flow</p>
+                  <p className={`text-lg font-bold ${budgetProgress.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(budgetProgress.netFlow || 0) >= 0 ? '+' : ''}₦{(budgetProgress.netFlow || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Efficiency</p>
+                  <p className={`text-lg font-bold ${budgetProgress.budgetEfficiency >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {budgetProgress.budgetEfficiency.toFixed(1)}%
                   </p>
                 </div>
               </div>
-              
-              {/* Progress Bar */}
-              <div className="mt-4">
-                <div className="w-full bg-gray-200 rounded-full h-3">
+
+              {/* Flow Status Indicator */}
+              <div className={`p-3 rounded-lg mb-4 ${
+                budgetProgress.flowStatus === 'positive' ? 'bg-green-100 border border-green-300' :
+                budgetProgress.flowStatus === 'negative' ? 'bg-red-100 border border-red-300' :
+                'bg-gray-100 border border-gray-300'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white">
+                    {budgetProgress.flowStatus === 'positive' ? <FiArrowUp className="w-5 h-5 text-green-600" /> : 
+                     budgetProgress.flowStatus === 'negative' ? <FiArrowDown className="w-5 h-5 text-red-600" /> : 
+                     <FiActivity className="w-5 h-5 text-gray-600" />}
+                  </div>
+                  <div>
+                    <p className={`font-semibold ${
+                      budgetProgress.flowStatus === 'positive' ? 'text-green-800' :
+                      budgetProgress.flowStatus === 'negative' ? 'text-red-800' :
+                      'text-gray-800'
+                    }`}>
+                      {budgetProgress.flowStatus === 'positive' ? 'Positive Cash Flow' :
+                       budgetProgress.flowStatus === 'negative' ? 'Negative Cash Flow' :
+                       'Neutral Cash Flow'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {budgetProgress.flowStatus === 'positive' ? 'Income exceeds expenses - Great job!' :
+                       budgetProgress.flowStatus === 'negative' ? 'Expenses exceed income - Review spending' :
+                       'Income equals expenses - Monitor closely'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Visual Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Budget Usage</span>
+                  <span className="text-sm font-bold">
+                    {budgetProgress.percentage.toFixed(1)}% of budget used
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
                   <div 
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      budgetProgress.percentage > 80 ? 'bg-red-500' : 
-                      budgetProgress.percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                    className={`h-4 rounded-full transition-all duration-500 ${
+                      budgetProgress.percentage > 100 ? 'bg-red-500' :
+                      budgetProgress.percentage > 80 ? 'bg-amber-400' : 'bg-green-500'
                     }`}
                     style={{ width: `${Math.min(budgetProgress.percentage, 100)}%` }}
                   />
                 </div>
+                {budgetProgress.percentage > 100 && (
+                  <p className="text-sm text-red-600 text-center">
+                    <FiAlertTriangle className="w-3 h-3 inline mr-1" />Over budget by ₦{(budgetProgress.overspent || 0).toLocaleString()}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1791,7 +2318,7 @@ export const ComprehensiveFinancialManager = () => {
           {budgetCategories.length > 0 && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Budget Categories</h3>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
+              <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
                 {budgetCategories.map((category) => (
                   <div key={category.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div>
@@ -1808,36 +2335,15 @@ export const ComprehensiveFinancialManager = () => {
             </div>
           )}
 
-          {/* Create New Budget Form */}
-          {!monthlyBudget && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Create Monthly Budget</h3>
-              <form onSubmit={handleCreateBudget} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <CustomDropdown
-                      label="Month"
-                      options={Array.from({length: 12}, (_, i) => ({
-                        value: i + 1,
-                        label: new Date(2024, i).toLocaleString('default', { month: 'long' })
-                      }))}
-                      value={newBudget.month}
-                      onChange={(value) => setNewBudget({...newBudget, month: parseInt(value)})}
-                      placeholder="Select Month"
-                    />
-                  </div>
-                  <div>
-                    <CustomDropdown
-                      label="Year"
-                      options={Array.from({length: 5}, (_, i) => ({
-                        value: 2024 + i,
-                        label: (2024 + i).toString()
-                      }))}
-                      value={newBudget.year}
-                      onChange={(value) => setNewBudget({...newBudget, year: parseInt(value)})}
-                      placeholder="Select Year"
-                    />
-                  </div>
+          {/* Edit Existing Budget Form */}
+          {monthlyBudget && editingBudget && (
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h3 className="font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                <FiEdit className="w-5 h-5" />
+                Edit Budget
+              </h3>
+              <form onSubmit={handleUpdateBudget} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Budget Amount (₦)</label>
                     <SmartNumberInput
@@ -1845,6 +2351,98 @@ export const ComprehensiveFinancialManager = () => {
                       onChange={(value) => setNewBudget({...newBudget, budget_amount: value})}
                       placeholder="100,000"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
+                    <CustomDropdown
+                      options={['Monthly', 'Yearly', 'Decades']}
+                      value={newBudget.period_type === 'monthly' ? 'Monthly' : newBudget.period_type === 'yearly' ? 'Yearly' : 'Decades'}
+                      onChange={(value) => setNewBudget({...newBudget, period_type: value.toLowerCase()})}
+                      placeholder="Select Period"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={newBudget.notes}
+                    onChange={(e) => setNewBudget({...newBudget, notes: e.target.value})}
+                    placeholder="Budget notes or goals..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={creatingBudget}
+                    className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50"
+                  >
+                    {creatingBudget ? 'Updating...' : 'Update Budget'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingBudget(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Create New Budget Form */}
+          {!monthlyBudget && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Create Monthly Budget</h3>
+              <form onSubmit={handleCreateBudget} className="space-y-4">
+                {/* Budget Period Selection */}
+                <div>
+                  <CustomDropdown
+                    label="Budget Period"
+                    options={['Monthly', 'Yearly', 'Decades']}
+                    value={newBudget.period_type === 'monthly' ? 'Monthly' : newBudget.period_type === 'yearly' ? 'Yearly' : 'Decades'}
+                    onChange={(value) => setNewBudget({...newBudget, period_type: value.toLowerCase()})}
+                    placeholder="Select Budget Period"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {newBudget.period_type === 'monthly' && (
+                    <div>
+                      <CustomDropdown
+                        label="Month"
+                        options={Array.from({length: 12}, (_, i) => new Date(2025, i).toLocaleString('default', { month: 'long' }))}
+                        value={new Date(2025, newBudget.month - 1).toLocaleString('default', { month: 'long' })}
+                        onChange={(monthName) => {
+                          const monthIndex = new Date(Date.parse(monthName + " 1, 2025")).getMonth() + 1;
+                          setNewBudget({...newBudget, month: monthIndex});
+                        }}
+                        placeholder="Select Month"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <CustomDropdown
+                      label="Year"
+                      options={Array.from({length: 10}, (_, i) => (2025 + i).toString())}
+                      value={newBudget.year.toString()}
+                      onChange={(value) => setNewBudget({...newBudget, year: parseInt(value)})}
+                      placeholder="Select Year"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Budget Amount (₦) - {newBudget.period_type === 'monthly' ? 'Monthly' : newBudget.period_type === 'yearly' ? 'Yearly' : 'Per Decade'}
+                    </label>
+                    <SmartNumberInput
+                      value={newBudget.budget_amount}
+                      onChange={(value) => setNewBudget({...newBudget, budget_amount: value})}
+                      placeholder={newBudget.period_type === 'monthly' ? '100,000' : newBudget.period_type === 'yearly' ? '1,200,000' : '12,000,000'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       required
                     />
                   </div>
@@ -1862,9 +2460,9 @@ export const ComprehensiveFinancialManager = () => {
                 <button
                   type="submit"
                   disabled={creatingBudget}
-                  className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all disabled:opacity-50"
+                  className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-all disabled:opacity-50 shadow-sm"
                 >
-                  {creatingBudget ? 'Creating Budget...' : 'Create Budget'}
+                  {creatingBudget ? 'Creating Budget...' : `Create ${newBudget.period_type === 'monthly' ? 'Monthly' : newBudget.period_type === 'yearly' ? 'Yearly' : 'Decade'} Budget`}
                 </button>
               </form>
             </div>

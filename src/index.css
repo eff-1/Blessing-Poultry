@@ -7,6 +7,30 @@
 
 /* Custom Scrollbar Styles */
 @layer utilities {
+  /* Custom themed scrollbar for desktop */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #10b981 #f3f4f6;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #10b981;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #059669;
+  }
+
   /* Hide scrollbar on mobile/touch devices */
   @media (hover: none) and (pointer: coarse) {
     .scrollbar-hide {

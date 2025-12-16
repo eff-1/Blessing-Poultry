@@ -99,8 +99,15 @@ export const NotificationProvider = ({ children }) => {
 }
 
 const NotificationContainer = ({ notifications, removeNotification }) => {
+  // Use a safer approach without portal to avoid DOM errors
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[10000] space-y-2 max-w-sm sm:w-full">
+    <div 
+      className="fixed top-4 right-4 left-4 sm:left-auto space-y-2 max-w-sm sm:w-full" 
+      style={{ 
+        zIndex: 2147483648, // One higher than modal max
+        position: 'fixed'
+      }}
+    >
       <AnimatePresence>
         {notifications.map((notification) => (
           <NotificationCard
@@ -172,6 +179,9 @@ const NotificationCard = ({ notification, onRemove }) => {
       exit={{ opacity: 0, x: 300, scale: 0.9 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       className={`${colors.bg} border rounded-xl shadow-lg p-4 backdrop-blur-sm`}
+      style={{ 
+        position: 'relative'
+      }}
     >
       <div className="flex items-start gap-3">
         <div className={colors.icon}>
